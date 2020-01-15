@@ -1,0 +1,42 @@
+---
+title: "binder"
+author: "Ryu"
+date: '2020 1 15 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 데이터 프레임의 행과 열 결합
+rbind() 와 cbind()는 각 행 또는 컬럼 형태로 주어진 벡터, 행렬, 데이터 프레임을 합쳐서 행렬 또는 데이터 프레임을 만들 수 있게 도와준다.<br>
+
+```{r}
+rbind(c(1,2,3), c(4,5,6))
+```
+
+데이터 프레임 역시 rbind()를 사용하여 행을 합칠 수 있다. 여기서 2개 행을 저장한 데이터 프레임 x와 새로운 값을 저장한 벡터 c(3,"c")를 <br>
+rbind() 로 합쳐서 새로운 데이터 프레임 y에 저장해보자. 아래 코드의 첫 행에서 stringsAsFactor는 name 컬럼의 데이터를 펙터가 아니라 문자열로 <br>
+취급하기 위해 필요하다. 만약 StringsAsfactors를 지정하지 않으면 "a", "b"가 펙터 데이터로 취급되어 이름을 표현하려는 컬럼의 목적에 어긋나게 된다.
+
+```{r}
+(x <- data.frame(id = c(1,2), name = c ( "a","b"), stringsAsFactors = F))
+str(x)
+(y <- rbind(x,c(3,"c")))
+
+```
+
+cbind()는 주어진 인자를 컬럼으로 취급하여 데이터를 합친다. 아래와 같이 두 벡터를 합쳐 행렬로 만들어보자.
+```{r}
+cbind(c(1,2,3),c(4,5,6))
+```
+
+마찬가지 방법으로 cbind()를 사용해 데이터 프레임에 새로운 컬럼을 추가할 수 있다. 아래 코드에서도 확인할 수 있듯이 stringAsfacgors를 FALSE로 <br>
+지정하면 새로 추가된 geek 컬럼이 문자열이 되지만, 이를 생략하면 범주형 데이터인 팩터가 된다.
+데이터 프레임에 새로운 컬럼을 추가할 때는 cbind() 함수를 사용하지 않고 df$dolname <- data 형태로도 추가 할 수 있다. 
+```{r}
+(y <- cbind(x, greek = c("alpha", "beta")))
+str(y)
+```
+
