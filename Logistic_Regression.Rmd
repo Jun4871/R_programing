@@ -4,10 +4,11 @@ author: "Ryu"
 date: '2020 1 15 '
 output: html_document
 ---
-  
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
 
 <!-- # 제목 1 -->
   <!-- ## 제목 2 -->
@@ -114,4 +115,3 @@ is_correct_p <- test_set$Species %>%  as.numeric() == ifelse(logit_p < 0.5, 1, 2
 sum(is_correct_p) / length(is_correct_p)
 ```
 그러나 iris 데이터 자체가 매우 교과서적으로 나와있어서 역시  차후에 복잡한 데이터를 통해 다시 한 번 적용해볼 예정이다.
-
