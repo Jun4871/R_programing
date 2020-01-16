@@ -7,8 +7,6 @@ plot(cars)
 # linear model
 # lm() 함수
 # lm("종속변수" ~ "독립변수", data)
-# 종속변수 = 쉽게 말해서 Y
-# 독립변순 = 쉽게 말해서 X
 
 str(cars)
 summary(cars)
