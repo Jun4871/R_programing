@@ -1,7 +1,7 @@
 ---
-title: "Logistic_Regression"
-author: "Ryu"
-date: '2020 1 15 '
+  title: "로지스틱 회귀분석"
+author: "Ryukyungjun"
+date: '2020 1 1 '
 output: html_document
 ---
 
