@@ -1,0 +1,6 @@
+str(mtcars)
+install.packages("Hmisc")
+library(Hmisc)
+install.packages("psych")
+library(Hmisc)
+describe(mtcars)
