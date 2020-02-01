@@ -35,3 +35,24 @@ error_penalty <- abs(label[test_idx]- pred_penalty) > 0.5
 xgb_penalty$evaluation_log[250,]
 mean(error_penalty)
 ###
+
+error_default <-rep(0, 250)
+error_penalty <-rep(0, 250)
+for(i in 1:250){
+  pred_def <- predict(xgb_default, predictors[test_idx,], ntreelimit = i)
+  error_default[i] <- mean(abs(label[test_idx]-pred_def) >= 0.5)
+  pred_pen <- predict(xgb_penalty, predictors[test_idx,], ntreelimit = i)
+  error_penalty[i] <- mean(abs(label[test_idx]-pred_pen) >= 0.5)
+  }
+
+####
+
+errors <- rbind(xgb_default$evaluation_log,
+                xgb_penalty$evaluation_log,
+                data.frame(iter=1:250, train_error=error_default),
+                data.frame(iter=1:250, train_error=error_penalty))
+errors$type <- rep(c('default train', 'penalty train',
+                     'default test', 'penalty test'), rep(250,4))
+ggplot(errors, aes(x=iter, y=train_error, group=type)) +
+  geom_line(aes(linetype=type, color=type))
+
