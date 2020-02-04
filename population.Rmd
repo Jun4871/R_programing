@@ -1,0 +1,61 @@
+---
+title: "유동인구 분석"
+author: "Jun"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    highlight: textmate
+    theme: default
+    toc: true
+    toc_float: true
+    code_folding: show
+    df_print: paged
+---
+
+## Overview
+
+SK Data Hub에서 가져온 19년 12월 서울시 유동인구 데이터 자료를 분석해보고자 한다. 기지국의 로그정보를 기반으로 유동인구를 파악하는 것이기 때문에 전체 유동인구 자료가 아님을 고려하고 분석해보도록 하겠다. 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 패키지 불러오기
+
+```{r message=FALSE}
+library(tidyverse)
+library(lubridate)
+library(DT)
+library(ggplot2)
+library(plotly)
+```
+
+## 데이터 불러오기 및 구조파악
+데이터 구조를 확인해보니 총 7개의 컬럼 (날짜, 측정시간, 나이, 성별, 시, 군구, 유동인구) 으로 이루어져 있다. 컬럼 명을 영문으로 바꿔주고 날짜형식을 보기편하게 바꿔주었다.
+
+```{r}
+#rm(list=ls())
+population <- read.csv("Population_1912.csv")
+str(population)
+summary(population)
+
+# 컬럼명 영문화
+colnames(population) <- c("date", "time","age", "sex", "city", "town","population")
+
+# 날짜형식으로 변경
+population$date <- ymd(population$date)
+
+```
+
+
+
+## 그룹화
+tidyverse 패키지를 활용해서 컬렴 별로 그룹화 시켜보자. 먼저 날짜와 시군구를 기준으로 그룹화를 해보자.
+```{r}
+
+date_grouping <- population %>% 
+  group_by(date) %>% 
+
+```
+
+## 

@@ -51,7 +51,7 @@ commit_info <- data.frame(commit_date,commit_count,fill) %>%
 
 ####
 
-uniform_date <- 100
+uniform_date <- 30
 
 # ggplot
 git_vis <- ggplot(data = tail(commit_info,uniform_date), aes(x=commit_date,y=commit_count,fill=level)) +
@@ -63,7 +63,7 @@ git_vis <- ggplot(data = tail(commit_info,uniform_date), aes(x=commit_date,y=com
 
 
 
-ggplotly(git_vis)
+ggplotly(git_vis, height = 500, width = 800)
 
 ```
 
