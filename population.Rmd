@@ -14,7 +14,7 @@ output:
 
 ## Overview
 
-SK Data Hub에서 가져온 19년 12월 서울시 유동인구 데이터 자료를 분석해보고자 한다. 기지국의 로그정보를 기반으로 유동인구를 파악하는 것이기 때문에 전체 유동인구 자료가 아님을 고려하고 분석해보도록 하겠다. 
+SK Data Hub에서 가져온 19년 12월 서울시 유동인구 데이터 자료를 분석해보고자 한다. 분석의 목적은 '유동인구가 가장 발생한 날짜, 지역, 시간대'를 알아보는 것이다. 기지국의 로그정보를 기반으로 유동인구를 파악하는 것이기 때문에 전체 유동인구 자료가 아님을 고려하고 분석해보도록 하겠다. 
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -22,25 +22,53 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## 패키지 불러오기
 
+데이터 전처리 및 시각화 등에 필요한 패키지들을 활성화.
+
 ```{r message=FALSE}
 library(tidyverse)
 library(lubridate)
 library(DT)
 library(ggplot2)
 library(plotly)
+library(mlbench)
 ```
 
 ## 데이터 불러오기 및 구조파악
-데이터 구조를 확인해보니 총 7개의 컬럼 (날짜, 측정시간, 나이, 성별, 시, 군구, 유동인구) 으로 이루어져 있다. 컬럼 명을 영문으로 바꿔주고 날짜형식을 보기편하게 바꿔주었다.
+
+데이터를 불러오고 기본적인 데이터 가공 및 파악을 해보자. 구조를 확인해보니 총 7개의 컬럼 (날짜, 측정시간, 나이, 성별, 시, 군구, 유동인구) 으로 이루어져 있다. 컬럼 명을 영문으로 바꿔주고 날짜형식을 보기편하게 바꿔주었다.
+
+<br>
+
+time : 숫자형식으로, 일별로 0시부터 23시까지 측정을 했음을 유추할 수 있다. 
+
+<br>
+
+age : 숫자형식으로, 20대 ~ 70대 인구를 대상으로 측정을 했음을 유추할 수 있다. 
+
+<br>
+
+sex : 펙터형식으로,  남성과 여성으로 레벨이 구분되어 있고 각 레벨의 데이터 개수가 111,600으로 동일함을 알 수 있다.
+
+<br>
+
+town : 펙터형식으로, 총 25개의 구가 레벨로 구분되어 있음을 파악할 수 있고, 각 구별로 8928개의 데이터 셋을 가지고 있음을 알 수 있다. 
+
+<br>
+
+population : 숫자형식으로, 측정값의 최소치는 4,570이고 최대치는 124,450 그리고 평균은 27,484로 대략적인 수치를 파악할 수 있다. 
+
 
 ```{r}
 #rm(list=ls())
 population <- read.csv("Population_1912.csv")
-str(population)
-summary(population)
 
 # 컬럼명 영문화
 colnames(population) <- c("date", "time","age", "sex", "city", "town","population")
+
+# 데이터 구조 파악
+str(population)
+summary(population, head(100))
+
 
 # 날짜형식으로 변경
 population$date <- ymd(population$date)
@@ -50,22 +78,118 @@ population$date <- ymd(population$date)
 
 
 ## 그룹화
-tidyverse 패키지를 활용해서 컬렴 별로 그룹화 시켜보자. 먼저 일별, 시간대 별 유동인구의 수를 파악해보자. 첫 번째로 일별, 시간대별로 그룹화를 시켜보았다. 
+
+### 1) 일별 / 월별 그룹화
+
+tidyverse 패키지를 활용해서 컬렴 별로 그룹화 시켜보자. 먼저 date, time 별 유동인구의 수를 파악해보자. 
+
+<br>
+
+A. 일 & 시간대 별 그룹화 : 간단히 19년 12월 1일 데이터를 보자면, 0시 최초 측정값은 7,997,540의 수치를 보였으나, 사람들이 본격적으로 활동하는 시간대인 10시를 넘어서는 8,100,000에서 8,190,000의 확연한 증가추세를 확인할 수 있었다. 평균을 보자면 오후 4시의 평균(27302.40)가 가장 높았다. 
+
+B. 시간대 별 그룹화 : 역시나 통상 사람이 활동하는 시간대로 진입할수록 유동인구의 수가 늘어나고 있음을 확인할 수 있다. 
+
+C. 일 별 그룹화 : 19년 12월 서울시 내 유동인구가 가장 많은 날은 2일로 201,496,500 명이다. 반면에 가장 적은 날은 29일로 189,171,130 명이다.
+
+
+
+```{r}
+# 일별, 시간대별 유동인구수의 합과 평균
+date_time_grouping <- population %>% 
+  group_by(date, time) %>% 
+  summarize(date_time_sum = sum(population), date_time_mean = mean(population)) %>% 
+   as.data.frame() %>% 
+   head(24)
+
+# 시간대 별 유동인구수의 합과 평균
+time_grouping <- population %>% 
+  group_by(time) %>% 
+  summarize(time_total_sum = sum(population), time_total_mean = mean(population)) %>% 
+  as.data.frame()
+
+
+# 일별 유동인구수의 합과 평균
+date_grouping <- population %>% 
+  group_by(date) %>% 
+  summarize(date_total_sum = sum(population), date_total_mean = mean(population)) %>% 
+  as.data.frame()
+
+
+# max(time_grouping$time_total_mean)
+# min(date_grouping$date_total)
+
+
+```
+
+
+### 2) 지역별 그룹화
+
+어느 지역에서 가장 많은 유동인구가 있었는지 확인해보자. 
+
+
+
 ```{r}
 
-# 일별, 시간대별 유동인구수의 합
-date_grouping <- population %>% 
-  group_by(date, time) %>% 
-  summarize(pop = sum(population)) %>% as.data.frame()
+# 지역별 성별 그룹화
+
+town_grouping <- population %>% 
+  group_by(town) %>% 
+  summarize(town_sum = sum(population), town_mean = mean(population)) %>% 
+  as.data.frame()
+
+town_grouping,max(town_grouping$town_sum)]
+
+```
+
+
+```{r}
+
+
+
+date_time <- c(time_grouping, date_grouping)
+
+# 실패 ggplot(date_grouping,time_grouping,aes(x= date, y= time))
+
+# 일별, 시간대별 유동인구의수 시각화
+ggplot(data = date_time_grouping, aes(x= date, y= time))
+
+# 시간대를 묶어 일별로 그룹화해보자
+time_grouping <- population %>% 
+  group_by(time) %>% 
+  summarize(sum_time = sum(population)) %>% as.data.frame()
+
+
+
+# 일별, 시간대별 유동인구의의 합 시각화
+ggplotly(date_grouping, height = 500, width = 800)
+
+ggplot(date_grouping, aes(x = date, y = sum_date_time))+
+         geom_line(size=1) +
+  
 
 # 일별, 시간대별 유동인구수 평균 값
 date_grouping <- population %>% 
   group_by(date, time) %>% 
-  summarize(pop = mean(population)) %>% as.data.frame()
-
-
+  summarize(mean_date_time = mean(population)) %>% as.data.frame()
 
 
 ```
 
  
+```{r}
+# 일별 유동인구수의 합
+date_grouping <- population %>% 
+  group_by(date) %>% 
+  summarize(date_total = sum(population)) %>% as.data.frame()
+
+# 성별 유동인구수의 합
+date_grouping <- population %>% 
+  group_by(sex) %>% 
+  summarize(sex_sum = sum(population)) %>% as.data.frame()
+
+# 구별 유동인구수의 합
+date_grouping <- population %>% 
+  group_by(town) %>% 
+  summarize(town_sum = sum(population)) %>% as.data.frame()
+```
+
