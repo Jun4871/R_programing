@@ -50,12 +50,22 @@ population$date <- ymd(population$date)
 
 
 ## 그룹화
-tidyverse 패키지를 활용해서 컬렴 별로 그룹화 시켜보자. 먼저 날짜와 시군구를 기준으로 그룹화를 해보자.
+tidyverse 패키지를 활용해서 컬렴 별로 그룹화 시켜보자. 먼저 일별, 시간대 별 유동인구의 수를 파악해보자. 첫 번째로 일별, 시간대별로 그룹화를 시켜보았다. 
 ```{r}
 
+# 일별, 시간대별 유동인구수의 합
 date_grouping <- population %>% 
-  group_by(date) %>% 
+  group_by(date, time) %>% 
+  summarize(pop = sum(population)) %>% as.data.frame()
+
+# 일별, 시간대별 유동인구수 평균 값
+date_grouping <- population %>% 
+  group_by(date, time) %>% 
+  summarize(pop = mean(population)) %>% as.data.frame()
+
+
+
 
 ```
 
-## 
+ 
