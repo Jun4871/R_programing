@@ -112,12 +112,46 @@ time_grouping <- population %>%
 date_grouping <- population %>% 
   group_by(date) %>% 
   summarize(date_total_sum = sum(population), date_total_mean = mean(population)) %>% 
-  as.data.frame()
+  as.data.frame() 
 
 
-# max(time_grouping$time_total_mean)
-# min(date_grouping$date_total)
+#################################################################
 
+date_grouping <- population %>% 
+  group_by(date) %>% 
+  summarize(date_time_sum = sum(population)) %>% 
+   as.data.frame() 
+
+min(date_grouping$date_time_sum, na.rm = TRUE)
+
+plot(date_grouping, xlab="date", ylab="population", main= "일별 유동인구수", pch=20, type="o") # y값 출력문제 있음
+#최댓값 201496500 #최솟값 189171130 
+
+ggplot(date_grouping, aes(x="date", y="population"))+
+  geom_col()
+
+
+
+
+
+
+
+
+
+
+plot(population$time,population$date, )
+
+plot(date_time_grouping)
+
+
+ggplot(grouping, aes(x = population, y = date))
+
+
+
+```
+
+
+```{r}
 
 ```
 
@@ -137,7 +171,8 @@ town_grouping <- population %>%
   summarize(town_sum = sum(population), town_mean = mean(population)) %>% 
   as.data.frame()
 
-town_grouping,max(town_grouping$town_sum)]
+max(town_grouping$town_sum)
+which(town_grouping ==  447555710)
 
 ```
 
