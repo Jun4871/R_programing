@@ -20,7 +20,8 @@ SK Data Hub에서 가져온 19년 12월 서울시 유동인구 데이터 자료�
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## 패키지 불러오기
+
+## 1) 패키지 불러오기
 
 데이터 전처리 및 시각화 등에 필요한 패키지들을 활성화.
 
@@ -33,11 +34,12 @@ library(plotly)
 library(mlbench)
 ```
 
-## 데이터 불러오기 및 구조파악
+
+## 2) 데이터 불러오기 및 구조파악
 
 데이터를 불러오고 기본적인 데이터 가공 및 파악을 해보자. 구조를 확인해보니 총 7개의 컬럼 (날짜, 측정시간, 나이, 성별, 시, 군구, 유동인구) 으로 이루어져 있다. 컬럼 명을 영문으로 바꿔주고 날짜형식을 보기편하게 바꿔주었다.
 
-<br>
+<br><br>
 
 time : 숫자형식으로, 일별로 0시부터 23시까지 측정을 했음을 유추할 수 있다. 
 
@@ -81,14 +83,13 @@ population$date <- ymd(population$date)
 ```
 
 
+## 3) 조건 별 그룹화
 
-## 그룹화
+### 1) 날짜와 시간 / 날짜 / 시간 / 지역 
 
-### 1) 일별 / 월별 그룹화
+tidyverse 패키지의 group_by() 함수를 사용하여 조건에 맞춰 그룹화를 시켜보자. 
 
-tidyverse 패키지를 활용해서 컬렴 별로 그룹화 시켜보자. 먼저 date, time 별 유동인구의 수를 파악해보자. 
-
-<br>
+<br><br>
 
 A. 일 & 시간대 별 그룹화 : 간단히 19년 12월 1일 데이터를 보자면, 0시 최초 측정값은 7,997,540의 수치를 보였으나, 사람들이 본격적으로 활동하는 시간대인 10시를 넘어서는 8,100,000에서 8,190,000의 확연한 증가추세를 확인할 수 있었다. 평균을 보자면 오후 4시의 평균(27302.40)가 가장 높았다. 
 
@@ -96,10 +97,11 @@ B. 시간대 별 그룹화 : 역시나 통상 사람이 활동하는 시간대�
 
 C. 일 별 그룹화 : 19년 12월 서울시 내 유동인구가 가장 많은 날은 2일로 201,496,500 명이다. 반면에 가장 적은 날은 29일로 189,171,130 명이다.
 
+D. 지역구 별 그룹화 : 1위 : 강남구	447555710, 2위 : 송파구	388063340,	3위 : 강서구	325447120	
+
 
 
 ```{r}
-
 
 # 일별, 시간대별 유동인구수
 date_time_grouping <- population %>% 
@@ -108,7 +110,7 @@ date_time_grouping <- population %>%
   arrange(date_time_sum) %>% 
    as.data.frame() 
 
-# 시간대 별 유동인구수의 합과 평균
+# 시간대 별 유동인구수
 time_grouping <- population %>% 
   group_by(time) %>% 
   summarize(time_total_sum = sum(population), time_total_mean = mean(population)) %>% 
@@ -121,6 +123,12 @@ date_grouping <- population %>%
   summarize(date_total_sum = sum(population), date_total_mean = mean(population)) %>% 
   as.data.frame() 
 
+# 지역구별 유동인구수  
+town_grouping <- population %>% 
+  group_by(town) %>% 
+  summarize(town_total_sum = sum(population)) %>%
+  arrange(desc(town_total_sum))
+  as.data.frame()
 
 #################################################################
 
@@ -145,7 +153,7 @@ date_grouping <- population %>%
 
 ### 1) 날짜별 유동인구수
 
-날짜별로 유동인구의 분포를 파악해보자. 먼저 plot 함수를 사용해보니, 규칙성이 보인다. 유동인구수가 5개 묶음으로 솟아져있는 것을 확인할 수 있는데 이 구간은 전부 평일이다. 회사, 학교, 은행 등 대부분의 기관들의 운영시간 역시 평일이므로 활동인구가 주말대비 많은 것을 생각해볼 수 있다. 반면에 주말은 수치가 급감했는데, 이는 평일에 경제활동하는 사람들이 주말에는 외출보다는 휴식이 필요해보임을 알 수 있는 부분이다. 주말이 아님에도 수치가 급감한 부분이 있어 확인해보니, 이 날은 크리스마스라는 사실을 알게 되었다. 마찬가지로 휴일에는 유동인구수가 급감하는 현상을 다시 한 번 확인할 수 있었다.
+날짜별로 유동인구의 분포를 파악해보자. 먼저 plot 함수를 사용해보니, 규칙성이 보인다. 유동인구수가 5개 묶음으로 솟아져있는 것을 확인할 수 있는데 이 구간은 전부 평일이다. 회사, 학교, 은행 등 대부분의 기관들의 운영시간 역시 평일이므로 활동인구가 주말대비 많은 것을 생각해볼 수 있다. 반면에 주말은 수치가 급감했는데, 이는 평일에 경제활동하는 사람들이 주말에는 외출보다는 휴식이 필요해보임을 알 수 있는 부분이다. 주말이 아님에도 수치가 급감한 부분이 있어 확인해보니, 이 날은 크리스마스라는 사실을 알게 되었다. 마찬가지로 휴일에는 유동인구수가 급감하는 현상을 다시 한 번 확인할 수 있었다. 
 
 ```{r}
 
@@ -155,66 +163,40 @@ plot(date_time_grouping$date, date_time_grouping$date_time_sum, xlab = "Date", y
 
 ```
 
+### 2) 시간대별 유동인구수 
 
+<br>
+
+시간대별 유동인구수를 기준으로 시각화를 해보았다. 0시부터 지속적으로 유동인구가 줄기 시작하다가 6시부터 다시 유동인구수가 늘어나는 것을 알 수 있다. 이것 역시 일반적인 사람들의 생활패턴을 반영한다고 볼 수 있다. 등교준비, 출근준비 등으로 인해 6시를 기점으로 그래프가 상승하고 하교,퇴근 등으로 17시를 기점으로 그래프가 하락한다. 일반 사람들의 흔한 일과지만, 이러한 현상을 시각화함으로써 직접 확인해보았다. 
 ```{r}
 
-# date_time_grouping <- population %>% 
-#   group_by(date, time) 
-#   arrange(date_time_sum) %>% 
-#     sum
-#    as.data.frame() 
-# # 시각화 1번
-# # y축 = 시간 / x축 = 날짜
-# plot(date_time_grouping)
-# 
-# 
-# day <- population$date
-# pop <- population$population
-# 
-# date_grouping <- population %>% 
-#   group_by(date) %>% 
-#   summarize(date_time_sum = sum(population)) %>% 
-#    as.data.frame() 
-# 
-# min(date_grouping$date_time_sum, na.rm = TRUE)
-# 
-# plot(day,pop, xlab="date", ylab="population", main= "일별 유동인구수", pch=20, type="o", ylim=(c(0 , 1000000000)), xlim=c(1,31)) # y값 출력문제 있음
-# #최댓값 201496500 #최솟값 189171130 
-# 
-# ggplot(date_grouping, aes(x="date", y="population"))+
-#   geom_col()
-# 
-# 
-# 
-# ggplot(date, time, data = date_time_grouping)
-# 
-# 
-# 
-# 
-# plot(population$time,population$date, )
-# 
-# plot(date_time_grouping)
-# 
-# 
-# ggplot(grouping, aes(x = population, y = date))
+# 시간대 별 유동인구수 그래프
+plot(time_grouping$time, time_grouping$time_total_sum, xlab = "Time", ylab = "Population", main= "시간별 유동인구수")
+
 
 ```
 
+<br>
 
+### 3) 지역별 유동인구수
 
+지역별 유동인구수를 시각화를 해보았다. 19년 12월 한 달 기준 유동인구가 가장 많았던 지역으로는 **1위가 강남구**, **2위가 송파구**, **3위가 강서구**가 되겠다. **강남구 (447555710)**와 **송파구(388063340)**의 수치가 타지역보다 월등히 높은데, 두 지역을 보면 상권규모가 상당히 큰 지역이라는 특징이 있다. 이 두 지역에서 소위 '맛집'으로 소문난 가게들과 접대하기에 적합한 고급 레스토랑들이 거리에 즐비하고 있다는 것은 자명한 사실이다. 이 밖에도 쇼핑센터와 각 종 편의시설이 몰려있는 지역이니 만인에게 사랑받는 장소가 아닐 수 없다는 생각이 든다. 
 
 ```{r}
 
-# 지역별 성별 그룹화
+# 지역별 유동인구수 
+# y축 값이랑 x측값이 제대로 나오게 해야함..
 
-# town_grouping <- population %>% 
-#   group_by(town) %>% 
-#   summarize(town_sum = sum(population), town_mean = mean(population)) %>% 
-#   as.data.frame()
+# 강남구	447555710			
+# 송파구	388063340			
+# 강서구	325447120			
+# 서초구	314383010			
+# 영등포구	297386400			
+# 노원구	290028450			
+# 관악구	286813030			
+# 구로구	263344080			
+# 마포구	254268250			
+# 성북구	249093780	
 
-# max(town_grouping$town_sum)
-# which(town_grouping ==  447555710)
-
+plot(town_grouping$town, town_grouping$town_total_sum, xlab = "Town", ylab = "Population", main= "지역별 유동인구수")
 ```
-
-
