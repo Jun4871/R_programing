@@ -57,7 +57,6 @@ town : 펙터형식으로, 총 25개의 구가 레벨로 구분되어 있음을 
 
 population : 숫자형식으로, 측정값의 최소치는 4,570이고 최대치는 124,450 그리고 평균은 27,484로 대략적인 수치를 파악할 수 있다. 
 
-
 ```{r}
 #rm(list=ls())
 population <- read.csv("Population_1912.csv")
@@ -65,9 +64,15 @@ population <- read.csv("Population_1912.csv")
 # 컬럼명 영문화
 colnames(population) <- c("date", "time","age", "sex", "city", "town","population")
 
+# city 컬럼 삭제
+population <- population[,c(-5)]
+
 # 데이터 구조 파악
 str(population)
 summary(population, head(100))
+
+# NA 여부파악
+sum(is.na(population))
 
 
 # 날짜형식으로 변경
@@ -94,12 +99,14 @@ C. 일 별 그룹화 : 19년 12월 서울시 내 유동인구가 가장 많은 �
 
 
 ```{r}
-# 일별, 시간대별 유동인구수의 합과 평균
+
+
+# 일별, 시간대별 유동인구수
 date_time_grouping <- population %>% 
   group_by(date, time) %>% 
   summarize(date_time_sum = sum(population), date_time_mean = mean(population)) %>% 
-   as.data.frame() %>% 
-   head(24)
+  arrange(date_time_sum) %>% 
+   as.data.frame() 
 
 # 시간대 별 유동인구수의 합과 평균
 time_grouping <- population %>% 
@@ -117,35 +124,33 @@ date_grouping <- population %>%
 
 #################################################################
 
-date_grouping <- population %>% 
-  group_by(date) %>% 
-  summarize(date_time_sum = sum(population)) %>% 
-   as.data.frame() 
-
-min(date_grouping$date_time_sum, na.rm = TRUE)
-
-plot(date_grouping, xlab="date", ylab="population", main= "일별 유동인구수", pch=20, type="o") # y값 출력문제 있음
-#최댓값 201496500 #최솟값 189171130 
-
-ggplot(date_grouping, aes(x="date", y="population"))+
-  geom_col()
+# ggplot(date_time_grouping, aes(x=date, y=time,)) + 
+#  geom_line(size=1) # time이 24개의 값을 가지기 때문에 그래프가 지저분해진다. 측정 단위가 1시간 단위이니 하루에도 총 24번의 측정치가 생기는 것이고, 분간할 수 없는 그래프가 나오는 것이다. 
+# 
+# try1 <- population %>% 
+#   group_by(date, town) %>% 
+#   summarize(date_total = sum(population)) %>% 
+#    as.data.frame() 
+# plot(try1)
+# ggplot(try1)
 
 
 
 
+```
 
+<br>
 
+## 시각화
 
+### 1) 날짜별 유동인구수
 
+날짜별로 유동인구의 분포를 파악해보자. 먼저 plot 함수를 사용해보니, 규칙성이 보인다. 유동인구수가 5개 묶음으로 솟아져있는 것을 확인할 수 있는데 이 구간은 전부 평일이다. 회사, 학교, 은행 등 대부분의 기관들의 운영시간 역시 평일이므로 활동인구가 주말대비 많은 것을 생각해볼 수 있다. 반면에 주말은 수치가 급감했는데, 이는 평일에 경제활동하는 사람들이 주말에는 외출보다는 휴식이 필요해보임을 알 수 있는 부분이다. 주말이 아님에도 수치가 급감한 부분이 있어 확인해보니, 이 날은 크리스마스라는 사실을 알게 되었다. 마찬가지로 휴일에는 유동인구수가 급감하는 현상을 다시 한 번 확인할 수 있었다.
 
+```{r}
 
-plot(population$time,population$date, )
-
-plot(date_time_grouping)
-
-
-ggplot(grouping, aes(x = population, y = date))
-
+# 일별 유동인구수 그래프
+plot(date_time_grouping$date, date_time_grouping$date_time_sum, xlab = "Date", ylab = "Population", main= "일별 유동인구수")
 
 
 ```
@@ -153,12 +158,48 @@ ggplot(grouping, aes(x = population, y = date))
 
 ```{r}
 
+# date_time_grouping <- population %>% 
+#   group_by(date, time) 
+#   arrange(date_time_sum) %>% 
+#     sum
+#    as.data.frame() 
+# # 시각화 1번
+# # y축 = 시간 / x축 = 날짜
+# plot(date_time_grouping)
+# 
+# 
+# day <- population$date
+# pop <- population$population
+# 
+# date_grouping <- population %>% 
+#   group_by(date) %>% 
+#   summarize(date_time_sum = sum(population)) %>% 
+#    as.data.frame() 
+# 
+# min(date_grouping$date_time_sum, na.rm = TRUE)
+# 
+# plot(day,pop, xlab="date", ylab="population", main= "일별 유동인구수", pch=20, type="o", ylim=(c(0 , 1000000000)), xlim=c(1,31)) # y값 출력문제 있음
+# #최댓값 201496500 #최솟값 189171130 
+# 
+# ggplot(date_grouping, aes(x="date", y="population"))+
+#   geom_col()
+# 
+# 
+# 
+# ggplot(date, time, data = date_time_grouping)
+# 
+# 
+# 
+# 
+# plot(population$time,population$date, )
+# 
+# plot(date_time_grouping)
+# 
+# 
+# ggplot(grouping, aes(x = population, y = date))
+
 ```
 
-
-### 2) 지역별 그룹화
-
-어느 지역에서 가장 많은 유동인구가 있었는지 확인해보자. 
 
 
 
@@ -166,65 +207,14 @@ ggplot(grouping, aes(x = population, y = date))
 
 # 지역별 성별 그룹화
 
-town_grouping <- population %>% 
-  group_by(town) %>% 
-  summarize(town_sum = sum(population), town_mean = mean(population)) %>% 
-  as.data.frame()
+# town_grouping <- population %>% 
+#   group_by(town) %>% 
+#   summarize(town_sum = sum(population), town_mean = mean(population)) %>% 
+#   as.data.frame()
 
-max(town_grouping$town_sum)
-which(town_grouping ==  447555710)
-
-```
-
-
-```{r}
-
-
-
-date_time <- c(time_grouping, date_grouping)
-
-# 실패 ggplot(date_grouping,time_grouping,aes(x= date, y= time))
-
-# 일별, 시간대별 유동인구의수 시각화
-ggplot(data = date_time_grouping, aes(x= date, y= time))
-
-# 시간대를 묶어 일별로 그룹화해보자
-time_grouping <- population %>% 
-  group_by(time) %>% 
-  summarize(sum_time = sum(population)) %>% as.data.frame()
-
-
-
-# 일별, 시간대별 유동인구의의 합 시각화
-ggplotly(date_grouping, height = 500, width = 800)
-
-ggplot(date_grouping, aes(x = date, y = sum_date_time))+
-         geom_line(size=1) +
-  
-
-# 일별, 시간대별 유동인구수 평균 값
-date_grouping <- population %>% 
-  group_by(date, time) %>% 
-  summarize(mean_date_time = mean(population)) %>% as.data.frame()
-
+# max(town_grouping$town_sum)
+# which(town_grouping ==  447555710)
 
 ```
 
- 
-```{r}
-# 일별 유동인구수의 합
-date_grouping <- population %>% 
-  group_by(date) %>% 
-  summarize(date_total = sum(population)) %>% as.data.frame()
-
-# 성별 유동인구수의 합
-date_grouping <- population %>% 
-  group_by(sex) %>% 
-  summarize(sex_sum = sum(population)) %>% as.data.frame()
-
-# 구별 유동인구수의 합
-date_grouping <- population %>% 
-  group_by(town) %>% 
-  summarize(town_sum = sum(population)) %>% as.data.frame()
-```
 
