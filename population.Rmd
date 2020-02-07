@@ -24,7 +24,6 @@ knitr::opts_chunk$set(echo = TRUE)
 ## 1) 패키지 불러오기
 
 데이터 전처리 및 시각화 등에 필요한 패키지들을 활성화.
-
 ```{r message=FALSE}
 library(tidyverse)
 library(lubridate)
@@ -33,31 +32,22 @@ library(ggplot2)
 library(plotly)
 library(mlbench)
 ```
-
+<br> <br>
 
 ## 2) 데이터 불러오기 및 구조파악
 
 데이터를 불러오고 기본적인 데이터 가공 및 파악을 해보자. 구조를 확인해보니 총 7개의 컬럼 (날짜, 측정시간, 나이, 성별, 시, 군구, 유동인구) 으로 이루어져 있다. 컬럼 명을 영문으로 바꿔주고 날짜형식을 보기편하게 바꿔주었다.
 
-<br><br>
 
-time : 숫자형식으로, 일별로 0시부터 23시까지 측정을 했음을 유추할 수 있다. 
-
+**time** : int 형식, 0시부터 23시까지 총 24개의 값을 가지고 있다. 
 <br>
-
-age : 숫자형식으로, 20대 ~ 70대 인구를 대상으로 측정을 했음을 유추할 수 있다. 
-
+**age** : int 형식, 20대부터 70대까지 6개의 값을 가지고 있다.
 <br>
-
-sex : 펙터형식으로,  남성과 여성으로 레벨이 구분되어 있고 각 레벨의 데이터 개수가 111,600으로 동일함을 알 수 있다.
-
+**sex** : factor 형식, 남성과 여성으로 레벨이 구분되어 있고, 데이터 개수가 각 111,600으로 동일함을 알 수 있다.
 <br>
-
-town : 펙터형식으로, 총 25개의 구가 레벨로 구분되어 있음을 파악할 수 있고, 각 구별로 8928개의 데이터 셋을 가지고 있음을 알 수 있다. 
-
+**town** : factor 형식, 총 25개의 지역으로 레벨이 구분되어 있고, 각 구별로 8928개의 데이터 셋을 가지고 있음을 알 수 있다. 
 <br>
-
-population : 숫자형식으로, 측정값의 최소치는 4,570이고 최대치는 124,450 그리고 평균은 27,484로 대략적인 수치를 파악할 수 있다. 
+**population** : int 형식, 측정값의 최소치는 4,570이고 최대치는 124,450 그리고 평균은 27,484로 대략적인 수치를 파악할 수 있다. 
 
 ```{r}
 #rm(list=ls())
@@ -71,7 +61,10 @@ population <- population[,c(-5)]
 
 # 데이터 구조 파악
 str(population)
-summary(population, head(100))
+summary(population, head(20))
+
+# age 컬럼 레벨구분 
+population$age <- factor(population$age, levels = c("20","30","40","50","60","70"))
 
 # NA 여부파악
 sum(is.na(population))
@@ -81,7 +74,7 @@ sum(is.na(population))
 population$date <- ymd(population$date)
 
 ```
-
+<br> <br>
 
 ## 3) 조건 별 그룹화
 
@@ -98,9 +91,6 @@ B. 시간대 별 그룹화 : 역시나 통상 사람이 활동하는 시간대�
 C. 일 별 그룹화 : 19년 12월 서울시 내 유동인구가 가장 많은 날은 2일로 201,496,500 명이다. 반면에 가장 적은 날은 29일로 189,171,130 명이다.
 
 D. 지역구 별 그룹화 : 1위 : 강남구	447555710, 2위 : 송파구	388063340,	3위 : 강서구	325447120	
-
-
-
 ```{r}
 
 # 일별, 시간대별 유동인구수
@@ -110,25 +100,27 @@ date_time_grouping <- population %>%
   arrange(date_time_sum) %>% 
    as.data.frame() 
 
-# 시간대 별 유동인구수
-time_grouping <- population %>% 
-  group_by(time) %>% 
-  summarize(time_total_sum = sum(population), time_total_mean = mean(population)) %>% 
-  as.data.frame()
-
-
 # 일별 유동인구수의 합과 평균
 date_grouping <- population %>% 
   group_by(date) %>% 
   summarize(date_total_sum = sum(population), date_total_mean = mean(population)) %>% 
   as.data.frame() 
 
-# 지역구별 유동인구수  
-town_grouping <- population %>% 
-  group_by(town) %>% 
-  summarize(town_total_sum = sum(population)) %>%
-  arrange(desc(town_total_sum))
+# 시간대 별 유동인구수
+time_grouping <- population %>% 
+  group_by(time) %>% 
+  summarize(time_total_sum = sum(population), time_total_mean = mean(population)) %>% 
   as.data.frame()
+
+# 지역구, 성별 유동인구수  
+town_sex_grouping <- population %>% 
+  group_by(town, sex) %>% 
+  summarize(town_sex_sum = sum(population)) %>%
+  arrange(desc(town_sex_sum)) %>% 
+  as.data.frame()
+
+
+
 
 #################################################################
 
@@ -150,11 +142,10 @@ town_grouping <- population %>%
 <br>
 
 ## 시각화
-
+<br>
 ### 1) 날짜별 유동인구수
 
 날짜별로 유동인구의 분포를 파악해보자. 먼저 plot 함수를 사용해보니, 규칙성이 보인다. 유동인구수가 5개 묶음으로 솟아져있는 것을 확인할 수 있는데 이 구간은 전부 평일이다. 회사, 학교, 은행 등 대부분의 기관들의 운영시간 역시 평일이므로 활동인구가 주말대비 많은 것을 생각해볼 수 있다. 반면에 주말은 수치가 급감했는데, 이는 평일에 경제활동하는 사람들이 주말에는 외출보다는 휴식이 필요해보임을 알 수 있는 부분이다. 주말이 아님에도 수치가 급감한 부분이 있어 확인해보니, 이 날은 크리스마스라는 사실을 알게 되었다. 마찬가지로 휴일에는 유동인구수가 급감하는 현상을 다시 한 번 확인할 수 있었다. 
-
 ```{r}
 
 # 일별 유동인구수 그래프
@@ -162,7 +153,7 @@ plot(date_time_grouping$date, date_time_grouping$date_time_sum, xlab = "Date", y
 
 
 ```
-
+<br> 
 ### 2) 시간대별 유동인구수 
 
 <br>
@@ -183,7 +174,6 @@ plot(time_grouping$time, time_grouping$time_total_sum, xlab = "Time", ylab = "Po
 지역별 유동인구수를 시각화를 해보았다. 19년 12월 한 달 기준 유동인구가 가장 많았던 지역으로는 **1위가 강남구**, **2위가 송파구**, **3위가 강서구**가 되겠다. **강남구 (447555710)**와 **송파구(388063340)**의 수치가 타지역보다 월등히 높은데, 두 지역을 보면 상권규모가 상당히 큰 지역이라는 특징이 있다. 이 두 지역에서 소위 '맛집'으로 소문난 가게들과 접대하기에 적합한 고급 레스토랑들이 거리에 즐비하고 있다는 것은 자명한 사실이다. 이 밖에도 쇼핑센터와 각 종 편의시설이 몰려있는 지역이니 만인에게 사랑받는 장소가 아닐 수 없다는 생각이 든다. 
 
 ```{r}
-
 # 지역별 유동인구수 
 # y축 값이랑 x측값이 제대로 나오게 해야함..
 
@@ -200,3 +190,9 @@ plot(time_grouping$time, time_grouping$time_total_sum, xlab = "Time", ylab = "Po
 
 plot(town_grouping$town, town_grouping$town_total_sum, xlab = "Town", ylab = "Population", main= "지역별 유동인구수")
 ```
+
+<br>
+
+### 4) 지역과 성별 
+```{r}
+
