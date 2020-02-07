@@ -11,6 +11,12 @@ output:
     code_folding: show
     df_print: paged
 ---
+```{r}
+#연습
+#시간데이터를 제거한 일별 유동인구수
+
+
+```
 
 ## Overview
 
@@ -25,6 +31,10 @@ knitr::opts_chunk$set(echo = TRUE)
 
 데이터 전처리 및 시각화 등에 필요한 패키지들을 활성화.
 ```{r message=FALSE}
+#install.packages("ggthemes")
+# install.packages("gridExtra")
+library(gridExtra)
+library(ggthemes)
 library(tidyverse)
 library(lubridate)
 library(DT)
@@ -112,15 +122,12 @@ time_grouping <- population %>%
   summarize(time_total_sum = sum(population), time_total_mean = mean(population)) %>% 
   as.data.frame()
 
-# 지역구, 성별 유동인구수  
-town_sex_grouping <- population %>% 
-  group_by(town, sex) %>% 
-  summarize(town_sex_sum = sum(population)) %>%
-  arrange(desc(town_sex_sum)) %>% 
+# 지역구 유동인구수  
+town_grouping <- population %>% 
+  group_by(town) %>% 
+  summarize(town_sum = sum(population)) %>%
+  arrange(desc(town_sum)) %>% 
   as.data.frame()
-
-
-
 
 #################################################################
 
@@ -143,27 +150,37 @@ town_sex_grouping <- population %>%
 
 ## 시각화
 <br>
+
 ### 1) 날짜별 유동인구수
 
-날짜별로 유동인구의 분포를 파악해보자. 먼저 plot 함수를 사용해보니, 규칙성이 보인다. 유동인구수가 5개 묶음으로 솟아져있는 것을 확인할 수 있는데 이 구간은 전부 평일이다. 회사, 학교, 은행 등 대부분의 기관들의 운영시간 역시 평일이므로 활동인구가 주말대비 많은 것을 생각해볼 수 있다. 반면에 주말은 수치가 급감했는데, 이는 평일에 경제활동하는 사람들이 주말에는 외출보다는 휴식이 필요해보임을 알 수 있는 부분이다. 주말이 아님에도 수치가 급감한 부분이 있어 확인해보니, 이 날은 크리스마스라는 사실을 알게 되었다. 마찬가지로 휴일에는 유동인구수가 급감하는 현상을 다시 한 번 확인할 수 있었다. 
-```{r}
+날짜별로 유동인구의 분포를 파악해보자. 먼저 plot 함수를 사용해보니, 규칙성이 보인다. 유동인구수가 5개 묶음으로 솟아져있는 것을 확인할 수 있는데 이 구간은 전부 평일이다. 회사, 학교, 은행 등 대부분의 기관들의 운영시간 역시 평일이므로 활동인구가 주말대비 많은 것을 생각해볼 수 있다. 반면에 주말은 수치가 급감했는데, 이는 평일에 경제활동하는 사람들이 주말에는 외출보다는 휴식이 필요해보임을 알 수 있는 부분이다. 주말이 아님에도 수치가 급감한 부분이 있어 확인해보니, 이 날은 크리스마스 날 이었고, 30일, 31일은 평일임에도 다소 낮은 유동인구수치를 보였는데, 1월 1일이 휴일이라 연이어 쉬는 회사들도 있었기 때문인 것 같다. 
+```{r fig.height=8, fig.width = 17}
 
 # 일별 유동인구수 그래프
-plot(date_time_grouping$date, date_time_grouping$date_time_sum, xlab = "Date", ylab = "Population", main= "일별 유동인구수")
+#plot(date_time_grouping$date, date_time_grouping$date_time_sum, xlab = "Date", ylab = "Population", main= "일별 유동인구수")
 
-
+ggplot(date_time_grouping, aes(x=date_time_grouping$date, y=date_time_grouping$date_time_sum)) +
+  geom_point(size=2,alpha=0.5) +
+  theme_wsj() +
+   theme(axis.text.x = element_text(size=20)) +
+  theme(axis.text.y = element_text(size=20))
 ```
-<br> 
+<br>
+
 ### 2) 시간대별 유동인구수 
 
 <br>
 
 시간대별 유동인구수를 기준으로 시각화를 해보았다. 0시부터 지속적으로 유동인구가 줄기 시작하다가 6시부터 다시 유동인구수가 늘어나는 것을 알 수 있다. 이것 역시 일반적인 사람들의 생활패턴을 반영한다고 볼 수 있다. 등교준비, 출근준비 등으로 인해 6시를 기점으로 그래프가 상승하고 하교,퇴근 등으로 17시를 기점으로 그래프가 하락한다. 일반 사람들의 흔한 일과지만, 이러한 현상을 시각화함으로써 직접 확인해보았다. 
-```{r}
+```{r fig.height=8, fig.width = 16}
 
 # 시간대 별 유동인구수 그래프
-plot(time_grouping$time, time_grouping$time_total_sum, xlab = "Time", ylab = "Population", main= "시간별 유동인구수")
-
+# plot(time_grouping$time, time_grouping$time_total_sum, xlab = "Time", ylab = "Population", main= "시간별 유동인구수")
+ggplot(time_grouping, aes(x=time_grouping$time, y=time_grouping$time_total_sum)) +
+  geom_point(size=2,alpha=0.9) +
+  theme_wsj() +
+  theme(axis.text.x = element_text(size=20)) +
+  theme(axis.text.y = element_text(size=20))
 
 ```
 
@@ -173,26 +190,12 @@ plot(time_grouping$time, time_grouping$time_total_sum, xlab = "Time", ylab = "Po
 
 지역별 유동인구수를 시각화를 해보았다. 19년 12월 한 달 기준 유동인구가 가장 많았던 지역으로는 **1위가 강남구**, **2위가 송파구**, **3위가 강서구**가 되겠다. **강남구 (447555710)**와 **송파구(388063340)**의 수치가 타지역보다 월등히 높은데, 두 지역을 보면 상권규모가 상당히 큰 지역이라는 특징이 있다. 이 두 지역에서 소위 '맛집'으로 소문난 가게들과 접대하기에 적합한 고급 레스토랑들이 거리에 즐비하고 있다는 것은 자명한 사실이다. 이 밖에도 쇼핑센터와 각 종 편의시설이 몰려있는 지역이니 만인에게 사랑받는 장소가 아닐 수 없다는 생각이 든다. 
 
-```{r}
+```{r fig.height=8, fig.width = 18}
 # 지역별 유동인구수 
-# y축 값이랑 x측값이 제대로 나오게 해야함..
+#plot(town_grouping, town_grouping$town_sum, xlab = "Town", ylab = "Population", main= "지역별 유동인구수")
 
-# 강남구	447555710			
-# 송파구	388063340			
-# 강서구	325447120			
-# 서초구	314383010			
-# 영등포구	297386400			
-# 노원구	290028450			
-# 관악구	286813030			
-# 구로구	263344080			
-# 마포구	254268250			
-# 성북구	249093780	
-
-plot(town_grouping$town, town_grouping$town_total_sum, xlab = "Town", ylab = "Population", main= "지역별 유동인구수")
+ggplot(town_grouping, aes(x=town_grouping$town, y=town_grouping$town_sum)) +
+  geom_point(size=2,alpha=0.9) +
+  theme_wsj()
 ```
-
-<br>
-
-### 4) 지역과 성별 
-```{r}
 
