@@ -8,13 +8,13 @@ output:
     theme: default
     toc: true
     toc_float: true
-    code_folding: show
+    code_folding: hide
     df_print: paged
 ---
 
 <p align="center">
   <br>
-  <b>데이터 출처: [**SKT Data Hub](https://www.bigdatahub.co.kr/product/search_list.do)</b><br>
+  <b>데이터 출처: [SKT Data Hub](https://www.bigdatahub.co.kr/product/search_list.do)</b><br>
   <b>Github Code: [Jun4871 Github](https://github.com/Jun4871/copy_with_R_book/blob/master/t_test.Rmd)</b><br>
 </p>
 
@@ -34,7 +34,7 @@ knitr::opts_chunk$set(echo = TRUE)
 데이터 전처리 및 시각화 등에 필요한 패키지들을 활성화.
 ```{r message=FALSE}
 #install.packages("ggthemes")
-# install.packages("gridExtra")
+#install.packages("gridExtra")
 library(gridExtra)
 library(ggthemes)
 library(tidyverse)
@@ -62,7 +62,7 @@ library(formattable)
 <br>
 **population** : int 형식, 측정값의 최소치는 4,570이고 최대치는 124,450 그리고 평균은 27,484로 대략적인 수치를 파악할 수 있다. 
 
-```{r}
+```{r message=FALSE}
 #rm(list=ls())
 population <- read.csv("Population_1912.csv")
 
@@ -71,79 +71,61 @@ population <- read.csv("Population_1912.csv")
 # population <- read.csv(filename)
 
 # 컬럼명 영문화
-colnames(population) <- c("date", "time","age", "sex", "city", "town","population")
+colnames(population) <- c("Date", "Time","Age", "Sex", "City", "Town","Population")
 
 # city 컬럼 삭제
 population <- population[,-5]
 
 # 데이터 구조 파악
 str(population)
-summary(population, head(20))
+summary(population)
 
 # age 컬럼 레벨구분 
-population$age <- factor(population$age, levels = c("20","30","40","50","60","70"))
+population$Age <- factor(population$Age, levels = c("20","30","40","50","60","70"))
 
 # NA 여부파악
 sum(is.na(population))
 
 
 # 날짜형식으로 변경
-population$date <- ymd(population$date)
+population$Date <- ymd(population$Date)
 ```
-<br> <br>
-
-```{r}
-
-# 일별, 시간대별 유동인구수
-date_time_grouping <- population %>% 
-  group_by(date, time) %>% 
-  summarize(date_time_sum = sum(population), date_time_mean = mean(population)) %>% 
-  arrange(desc(date_time_sum,date_time_mean)) %>% 
-   as.data.frame() 
-
-# 일별 유동인구수의 합과 평균
-date_grouping <- population %>% 
-  group_by(date) %>% 
-  summarize(date_total_sum = sum(population), date_total_mean = mean(population)) %>% 
-  as.data.frame() %>% 
-  arrange(desc(date_total_sum))
-
-# 시간대 별 유동인구수
-time_grouping <- population %>% 
-  group_by(time) %>% 
-  summarize(time_total_sum = sum(population), time_total_mean = mean(population)) %>% 
-  as.data.frame() %>% 
-  arrange(desc(time_total_sum))
-
-# 지역구 유동인구수  
-town_grouping <- population %>% 
-  group_by(town) %>% 
-  summarize(town_sum = sum(population)) %>%
-  arrange(desc(town_sum)) %>% 
-  as.data.frame()
-
-#################################################################
-
-# ggplot(date_time_grouping, aes(x=date, y=time,)) + 
-#  geom_line(size=1) # time이 24개의 값을 가지기 때문에 그래프가 지저분해진다. 측정 단위가 1시간 단위이니 하루에도 총 24번의 측정치가 생기는 것이고, 분간할 수 없는 그래프가 나오는 것이다. 
-# 
-# try1 <- population %>% 
-#   group_by(date, town) %>% 
-#   summarize(date_total = sum(population)) %>% 
-#    as.data.frame() 
-# plot(try1)
-# ggplot(try1)
-
-
-# comma(town_grouping[1,2], 0)
-```
-
-<br> 
 <br> 
 
 ## 3) 조건 별 그룹화
 
-tidyverse 패키지의 group_by() 함수를 사용하여 조건에 맞춰 그룹화를 시켜보자. 
+```{r message=FALSE}
+
+# 일별, 시간대별 유동인구수
+date_time_grouping <- population %>% 
+  group_by(Date, Time) %>% 
+  summarize(Populaion_Ratio = sum(Population), Date_Time_mean = mean(Population)) %>% 
+  arrange(desc(Populaion_Ratio,Date_Time_mean)) %>% 
+   as.data.frame() 
+
+# 일별 유동인구수의 합과 평균
+date_grouping <- population %>% 
+  group_by(Date) %>% 
+  summarize(Date_Total_sum = sum(Population), Date_Total_mean = mean(Population)) %>% 
+  as.data.frame() %>% 
+  arrange(desc(Date_Total_sum))
+
+# 시간대 별 유동인구수
+time_grouping <- population %>% 
+  group_by(Time) %>% 
+  summarize(Population_Ratio = sum(Population), Time_Total_mean = mean(Population)) %>% 
+  as.data.frame() %>% 
+  arrange(desc(Population_Ratio))
+
+# 지역구 유동인구수  
+town_grouping <- population %>% 
+  group_by(Town) %>% 
+  summarize(Population_Ratio = sum(Population)) %>%
+  arrange(desc(Population_Ratio)) %>% 
+  as.data.frame()
+
+# comma(town_grouping[1,2], 0)
+```
 
 <br>
 
@@ -153,7 +135,7 @@ tidyverse 패키지의 group_by() 함수를 사용하여 조건에 맞춰 그룹
 
 #### B) 시간
 
-통상 사람이 활동하는 시간대로 진입할수록 유동인구의 수가 늘어나고 있음을 알 수 있었으며, 가장 많은 수치를 보인 시간대는 `r time_grouping[1,1]`시로 `r comma(time_grouping[1,2],0)` 명이다. 
+오전 -> 오후 시간대로 진입할수록 유동인구의 수가 늘어나고 있음을 알 수 있었으며, 가장 많은 수치를 보인 시간대는 `r time_grouping[1,1]`시로 `r comma(time_grouping[1,2],0)` 명이다. 
 
 #### C) 날짜
 
@@ -169,40 +151,80 @@ tidyverse 패키지의 group_by() 함수를 사용하여 조건에 맞춰 그룹
 
 <br>
 
-#### 1) 날짜별 유동인구수
+#### A) 날짜별 유동인구수
 
-날짜별로 유동인구의 분포를 파악해보자. 먼저 plot 함수를 사용해보니, 규칙성이 보인다. 유동인구수가 5개 묶음으로 솟아져있는 것을 확인할 수 있는데 이 구간은 전부 평일이다. 회사, 학교, 은행 등 대부분의 기관들의 운영시간 역시 평일이므로 활동인구가 주말대비 많은 것을 생각해볼 수 있다. 반면에 주말은 수치가 급감했는데, 업무적 의무성이 사라지니 특별한 이유없이 외출할 일은 없었을 것이다. 주말이 아님에도 수치가 급감한 부분이 있어 확인해보니, 이 날은 크리스마스 날 이었고, 30일, 31일은 평일임에도 다소 낮은 유동인구수치를 보였는데, 1월 1일이 휴일이라 연이어 쉬는 회사들도 있었기 때문인 것 같다. 
+날짜별로 유동인구의 분포를 파악해보자. 먼저 plot 함수를 사용해보니, 규칙성이 보인다. 유동인구수가 5개 묶음으로 솟아져있는 것을 확인할 수 있는데 이 구간은 전부 평일이다. 회사, 학교, 은행 등 대부분의 기관들의 운영시간 역시 평일이므로 유동인구가 많음을 알 수 있다. 반면에 주말은 수치가 급감했는데, 업무적 의무성이 사라지니 특별한 이유없이 외출할 일은 없었을 것이다. 주말이 아님에도 수치가 급감한 부분이 있어 확인해보니, 이 날은 크리스마스 날 이었고, 30일, 31일은 평일임에도 다소 낮은 유동인구수치를 보였는데, 1월 1일이 휴일이라 연이어 쉬는 회사들도 있었기 때문인 것 같다. 
 
-```{r fig.height=8, fig.width = 17}
+```{r fig.height=8, fig.width = 17, message=FALSE}
 
 # 일별 유동인구수 그래프
 #plot(date_time_grouping$date, date_time_grouping$date_time_sum, xlab = "Date", ylab = "Population", main= "일별 유동인구수")
 
-ggplot(date_time_grouping, aes(x=date_time_grouping$date, y=date_time_grouping$date_time_sum)) +
-  geom_point(size=2,alpha=0.5) +
-  theme_classic() +
+ggplot(date_time_grouping, aes(x=Date, y=Populaion_Ratio)) +
+  geom_point(size=5,alpha=0.5) +
+  theme_calc() +
    theme(axis.text.x = element_text(size=20)) +
-  theme(axis.text.y = element_text(size=20))
+  theme(axis.text.y = element_text(size=20)) +
+  ggtitle("19년 12월 유동인구수") +
+  theme(plot.title = element_text(face="bold", hjust=0.5, vjust=1, size=25, color="#008B8B")) +
+  xlab("날짜") +
+  ylab("유동인구") +
+  theme(axis.title.x=element_text(family="NanumGothic",  
+                                        face="bold",          
+                                        hjust=0.5,              
+                                        size=20,              
+                                        color="Black",       
+                                        angle=0), 
+   axis.title.y=element_text(family="NanumGothic",
+                                        face="bold",
+                                        vjust=0.5,              
+                                        size=20,
+                                        color="Black",
+                                        angle=0)) +
+  scale_y_continuous(limits=c(min(date_time_grouping$Populaion_Ratio), 
+                              max(date_time_grouping$Populaion_Ratio)), 
+                     labels=scales::comma) 
+ 
 ```
-<br>
-
-#### 2) 시간대별 유동인구수 
 
 <br>
 
-시간대별 유동인구수를 기준으로 시각화를 해보았다. 0시부터 지속적으로 유동인구가 줄기 시작하다가 6시부터 다시 유동인구수가 늘어나는 것을 알 수 있다. 이것 역시 일반적인 사람들의 생활패턴을 반영한다고 볼 수 있다. 등교준비, 출근준비 등으로 인해 6시를 기점으로 그래프가 상승하고 하교,퇴근 등으로 17시를 기점으로 그래프가 하락한다. 일반 사람들의 흔한 일과지만, 이러한 현상을 시각화함으로써 직접 확인해보았다. 
+#### B) 시간대별 유동인구수 
 
-```{r fig.height=8, fig.width = 16}
+시간대별 유동인구수를 기준으로 시각화를 해보았다. 0시부터 지속적으로 유동인구가 줄기 시작하다가 6시부터 다시 유동인구수가 늘어나는 것을 알 수 있다. 이것 역시 일반적인 사람들의 생활패턴을 반영한다고 볼 수 있다. 등교준비, 출근준비 등으로 인해 6시를 기점으로 그래프가 상승하는 것으로 보이고, 17시 이후에는 일반적으로 일과가 어느정도 마무리 되는 시점으로 볼 수 있고 그래프가 하락한다. 
+
+```{r fig.height=8, fig.width = 16, message=FALSE}
 
 # 시간대 별 유동인구수 그래프
 # plot(time_grouping$time, time_grouping$time_total_sum, xlab = "Time", ylab = "Population", main= "시간별 유동인구수")
-ggplot(time_grouping, aes(x=time_grouping$time, y=time_grouping$time_total_sum)) +
-  # geom_line(size=2,alpha=0.9) +
-  geom_point(size=2,alpha=0.9) +
-  theme_classic() +
+ggplot(time_grouping, aes(x=time_grouping$Time, y=time_grouping$Population_Ratio)) +
+   # geom_line(size=2,alpha=0.9) +
+  geom_point(size=5,alpha=0.9, shape=22,color = 'red',
+             fill = 'gray30',  stroke = 2) +
+  theme_calc() +
   # coord_fixed() +
   theme(axis.text.x = element_text(size=20)) +
-  theme(axis.text.y = element_text(size=1))
+  theme(axis.text.y = element_text(size=20)) +
+  ggtitle("19년 12월 시간대 별 유동인구수") +
+  theme(plot.title = element_text(face="bold", hjust=0.5, vjust=1, size=25, color="#008B8B")) +
+  xlab("시간") +
+  ylab("유동인구") +
+  theme(axis.title.x=element_text(family="NanumGothic", 
+                                        face="bold",          
+                                        hjust=0.5,               
+                                        size=20,              
+                                        color="Black",       
+                                        angle=0), 
+   axis.title.y=element_text(family="NanumGothic",
+                                        face="bold",
+                                        vjust=0.5,               
+                                        size=20,
+                                        color="Black",
+                                        angle=0)) +
+  scale_y_continuous(limits=c(min(time_grouping$Population_Ratio),
+                              max(time_grouping$Population_Ratio)),
+                     labels=scales::comma) +
+  scale_x_continuous(breaks=c(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24))
   # coord_cartesian(ylim=c(0,max(time_grouping$time_total_sum)))
   # scale_y_continuous(limits = c(min(time_grouping$time_total_sum), max(time_grouping$time_total_sum)))
   # coord_cartesian(ylim = c(0, max(time_grouping$time_total_sum)))
@@ -215,25 +237,51 @@ ggplot(time_grouping, aes(x=time_grouping$time, y=time_grouping$time_total_sum))
 
 <br>
 
-#### 3) 지역별 유동인구수
+#### C) 지역별 유동인구수
 
 지역별 유동인구수를 시각화를 해보았다. 19년 12월 한 달 기준 유동인구가 가장 많았던 지역으로는 **1위가 강남구**, **2위가 송파구**, **3위가 강서구**가 되겠다. **강남구 (447555710)**와 **송파구(388063340)**의 수치가 타지역보다 월등히 높은데, 두 지역을 보면 상권규모가 상당히 큰 지역이라는 특징이 있다. 이 두 지역에서 소위 '맛집'으로 소문난 가게들과 접대하기에 적합한 고급 레스토랑들이 거리에 즐비하고 있다는 것은 자명한 사실이다. 이 밖에도 쇼핑센터와 각 종 편의시설이 몰려있는 지역이니 만인에게 사랑받는 장소가 아닐 수 없다는 생각이 든다. 
 
-```{r fig.height=8, fig.width = 18}
+```{r fig.height=8, fig.width = 18, message=FALSE}
 # 지역별 유동인구수 
 #plot(town_grouping, town_grouping$town_sum, xlab = "Town", ylab = "Population", main= "지역별 유동인구수")
 
-ggplot(town_grouping, aes(x=town_grouping$town, y=town_grouping$town_sum)) +
-  geom_point(size=2,alpha=0.9) +
-  theme_classic()
-  
+ggplot(town_grouping, aes(x=town_grouping$Town, y=town_grouping$Population_Ratio)) +
+  geom_point(size=8,alpha=0.9, shape=22,color = 'red',
+             fill = 'gray30', stroke = 2) +
+  theme_calc() +
+  ggtitle("19년 12월 지역별 유동인구수") +
+  theme(plot.title = element_text(face="bold", hjust=0.5, vjust=1, size=30, color="#008B8B")) +
+  xlab("지역") +
+  ylab("유동인구") +
+  theme(axis.title.x=element_text(family="NanumGothic",  
+                                        face="bold",          
+                                        hjust=0.5,              
+                                        size=25,               
+                                        color="Black",        
+                                        angle=0), 
+   axis.title.y=element_text(family="NanumGothic",
+                                        face="bold",
+                                        vjust=0.5,              
+                                        size=25,
+                                        color="Black",
+                                        angle=0)) +
+  scale_y_continuous(limits=c(min(town_grouping$Population_Ratio),
+                              max(town_grouping$Population_Ratio)),
+                              labels=scales::comma) +
+  theme(axis.text.x = element_text(size=13, face ="bold")) +
+  theme(axis.text.y = element_text(size=20))
+  # scale_x_continuous(breaks=c(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24))
+  # coord_cartesian(ylim=c(0,max(time_grouping$time_total_sum)))
 
 
-# ggplot(town_grouping, aes(x = reorder(town , town_sum), y = town_sum, fill = town_sum)) +
+# ggplot(town_grouping, aes(x = reorder(Town , Population_Ratio), y = Population_Ratio, fill = Population_Ratio)) +
 #   geom_bar(stat = "identity") +
 #   xlab("구") +
 #   ylab("유동인구 총합") +
 #   coord_flip() +
-#   theme_bw()
+#   theme_bw() 
+  
+                              
+
 ```
 
