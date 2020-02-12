@@ -1,0 +1,38 @@
+---
+title: "data_table"
+author: "Ryu"
+date: '2020 2 12 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 필요한 라이브러리 활성화
+
+```{r}
+library(DT)
+library(ggplot2)
+```
+
+# 데이터 탐색 및 불러오기
+
+```{r}
+summary(diamonds)
+data(diamonds, package = "ggplot2")
+
+```
+
+# 데이터 테이블 생성
+
+```{r}
+datatable(head(diamonds, 100),  
+          rownames = FALSE, extensions = 'Scroller', filter = 'top', 
+          options = list(dom="tiS", scrollX = TRUE, scrollY=400, scrollCollapse=TRUE)) %>% 
+  formatCurrency('price', digits = 0 ) %>% 
+  formatStyle(columns = 'cut', valueColumns = 'cut', 
+              target = 'row', backgroundColor = styleEqual(levels = c("Good", "Ideal"), 
+                                                           values = c("red", "green")))
+```
+
