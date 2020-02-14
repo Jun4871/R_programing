@@ -15,7 +15,7 @@ output:
 <p align="center">
   <br>
   <b>데이터 출처: [SKT Data Hub](https://www.bigdatahub.co.kr/product/search_list.do)</b><br>
-  <b>Github Code: [Jun4871 Github](https://github.com/Jun4871/copy_with_R_book/blob/master/t_test.Rmd)</b><br>
+  <b>Github Code: [Jun4871 Github](https://github.com/Jun4871/R_programing/blob/master/population.Rmd)</b><br>
 </p>
 
 
