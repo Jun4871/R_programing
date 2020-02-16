@@ -1,0 +1,216 @@
+---
+title: "유동인구 분석"
+author: "Jun"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    highlight: textmate
+    theme: default
+    toc: true
+    toc_float: true
+    code_folding: hide
+    df_print: paged
+---
+
+<p align="center">
+  <br>
+  <b>데이터 출처: [SKT Data Hub](https://www.bigdatahub.co.kr/product/search_list.do)</b><br>
+  <b>Github Code: [Jun4871 Github](https://github.com/Jun4871/R_programing/blob/master/population.Rmd)</b><br>
+</p>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Overview 
+
+이번 데이터 분석은 최근 작업했던 19년 12월 유동인구 분석의 연장선이다. 조금 더 다각도에서 바라보고 파고들어 상업적 측면에서의 새로운 인사이트를 찾아서 상업성과 유동인구를 연관지어 보는 것이 분석목표이다. 데이터는  19년 3월 ~ 19년 12월까지, 총 10개월 분량의 데이터를 다룰 것이다.
+
+
+# 라이브러리 활성화
+
+데이터 분석에 앞서 필요한 패키지들을 준비하는 단계
+```{r}
+library(tidyverse)
+library(fs)
+library(lubridate)
+library(gridExtra)
+library(ggthemes)
+library(DT)
+library(ggplot2)
+library(plotly)
+library(mlbench)
+library(formattable)
+```
+
+# 데이터 로드
+
+지난 번 분석에서는 하나의 csv 파일을 불러왔기 때문에 loading 시 큰 어려움이 없었다. 하지만 이번에는 10개의 csv 파일을 불러와야 하기 때문에 다른 방법을 통해 데이터를 불러올 것이다. 
+
+```{r}
+
+Population_19 <- "year_19"
+year_19_pop <- fs::dir_ls(Population_19) 
+
+# 데이터 취합
+year_19_data <- year_19_pop %>% map_dfr(read_csv) 
+
+# 데이터 프레임 형식으로 변환
+year_19_pop_data_frame <- as.data.frame(year_19_data)
+
+```
+
+# 데이터 가공
+```{r}
+
+head(str(year_19_pop_data_frame, 50))
+summary(year_19_pop_data_frame)
+
+sum(is.na(year_19_pop_data_frame))
+sum(is.null(year_19_pop_data_frame))
+
+# 불필요한 컬럼 제거
+year_19_pop_data_frame <- year_19_pop_data_frame[,-5]
+
+# 날짜 형식으로 변환
+year_19_pop_data_frame$일자 <- ymd(year_19_pop_data_frame$일자)
+
+# 컬럼명 영문화
+colnames(year_19_pop_data_frame) <- c("Date", "Time","Age", "Sex", "Town","Population")
+
+# Age 컬럼 펙터화 
+year_19_pop_data_frame$Age <- factor(year_19_pop_data_frame$Age, levels = c("20","30","40","50","60","70"))
+
+# Sex 컬럼 펙터화
+year_19_pop_data_frame$Sex <- factor(year_19_pop_data_frame$Sex, levels = c("남성","여성"))
+
+# Town 컬럼 펙터화
+year_19_pop_data_frame$Town <- as.factor(year_19_pop_data_frame$Town)
+
+# Time 컬럼 정수화
+year_19_pop_data_frame$Time <- as.numeric(year_19_pop_data_frame$Time)
+# year_19_pop_data_frame$Time <- as.integer(year_19_pop_data_frame$Time)
+# 
+# year_19_pop_data_frame$Population <- as.integer(year_19_pop_data_frame$Population)
+
+```
+
+# 그룹화
+
+```{r fig.height=8, fig.width = 18, message=FALSE}
+# 월별로 그룹화한 month 컬럼 생성
+year_19_pop_data_frame <- year_19_pop_data_frame %>% 
+  mutate(Month = month(year_19_pop_data_frame$Date))
+
+# month 컬럼 펙터화
+year_19_pop_data_frame$Month <- as.factor(year_19_pop_data_frame$Month)
+
+# 요일별로 그룹화한 Wday 컬럼 생성
+year_19_pop_data_frame <- year_19_pop_data_frame %>% 
+  mutate(Wday = weekdays.POSIXt(year_19_pop_data_frame$Date))
+
+str(year_19_pop_data_frame)
+summary(year_19_pop_data_frame)
+
+
+# 시간별
+Time_grouping <- year_19_pop_data_frame %>% 
+  group_by(Time) %>% 
+  summarize(Time_Pop = sum(Population)) %>% 
+  arrange(desc(Time_Pop))
+
+
+# 요일별
+Wday_grouping <- year_19_pop_data_frame %>% 
+  group_by(Wday) %>% 
+  summarize(Wday_Pop = sum(Population)) %>% 
+  arrange(desc(Wday_Pop))
+
+
+
+
+
+
+# # 월별 유동인구수 
+# Month_grouping <- year_19_pop_data_frame %>% 
+#   group_by(Town) %>% 
+#   summarise(Monthly_pop = sum(Population)) 
+# 
+# 
+# year_19_pop_data_frame$Population <- as.numeric(year_19_pop_data_frame$Population)
+# str(year_19_pop_data_frame)
+  
+
+
+#   library(lubridate)
+# # month 컬럼 추가
+# year_18_food_data_frame <- year_18_food_data_frame %>% 
+#  mutate(month = month(year_18_food_data_frame$date))
+# # factor 로 변경
+# year_18_food_data_frame$month <- as.factor(year_18_food_data_frame$month)
+  
+#   # normalize
+# normalize <- function(x) {
+#   ((x - min(x))*100/(max(x)-min(x))) 
+# }
+# # normalized by group
+# data_by_month_county <- data_by_month_county %>% 
+#   group_by(county, type) %>% 
+#   mutate(normalized = normalize(call)) %>% 
+#   arrange(month) %>%
+#   arrange(county) %>% 
+#   arrange(type) %>%
+#   as.data.frame()
+# > data_by_month_county
+# month   county    type  call  normalized
+# 1       1   강남구 chicken 36534 100.0000000
+# 2       2   강남구 chicken 30806  50.4541130
+# 3       3   강남구 chicken 32427  64.4753914
+# 4       4   강남구 chicken 32470  64.8473315
+# 5       5   강남구 chicken 30224  45.4199464
+# 6       6   강남구 chicken 33320  72.1996367
+# 7       7   강남구 chicken 32650  66.4042903
+# 8       8   강남구 chicken 32674  66.6118848
+# 9       9   강남구 chicken 26771  15.5522879
+# 10     10   강남구 chicken 27384  20.8545974
+# 11     11   강남구 chicken 24973   0.0000000
+# 12     12   강남구 chicken 28241  28.2674509
+```
+
+# 시각화
+
+```{r}
+# 시간별 시각화 
+ggplot(Time_grouping, aes(Time, Time_Pop)) +
+ # geom_bar() +
+ geom_line(size=5, color="blue",  linetype = 1) +
+ geom_point(size=5,alpha=9, shape=21,color = "#ff6600",
+ fill = 'red', stroke = 3) +
+  theme_calc() +
+  ggtitle("19년 시간대별 유동인구수") +
+  theme(plot.title = element_text(face="bold", hjust=0.5, vjust=1, size=30, color="#008B8B")) +
+  xlab("시간대") +
+  ylab("유동인구") +
+  theme(axis.title.x=element_text(family="NanumGothic",  
+                                        face="bold",          
+                                        hjust=0.5,              
+                                        size=25,               
+                                        color="Black",        
+                                        angle=0), 
+   axis.title.y=element_text(family="NanumGothic",
+                                        face="bold",
+                                        vjust=0.5,              
+                                        size=25,
+                                        color="Black",
+                                        angle=0)) +
+  scale_y_continuous(limits=c(min(Time_grouping$Time_Pop),
+                              max(Time_grouping$Time_Pop)),
+                              labels=scales::comma) +
+  theme(axis.text.x = element_text(size=13, face ="bold")) +
+  theme(axis.text.y = element_text(size=20))
+
+# 월별 시각화
+
+```
+
