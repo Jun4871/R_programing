@@ -14,7 +14,7 @@ output:
 
 <p align="center">
   <br>
-  <b>데이터 출처: [SKT Data Hub](https://www.bigdatahub.co.kr/product/search_list.do)</b><br>
+  <b>데이터 출처: [SKT Data Hub](https://www.bigdatahub.co.kr/product/list.do?menu_id=1000157)</b><br>
   <b>Github Code: [Jun4871 Github](https://github.com/Jun4871/R_programing/blob/master/population.Rmd)</b><br>
 </p>
 
@@ -30,7 +30,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # 라이브러리 활성화
 
-데이터 분석에 앞서 필요한 패키지들을 준비하는 단계
+데이터 분석에 앞서 필요한 도구를  준비하는 단계로 아래 라이브러리들을 활용하였다.  
 ```{r}
 library(tidyverse)
 library(fs)
@@ -44,10 +44,10 @@ library(mlbench)
 library(formattable)
 ```
 
+
 # 데이터 로드
 
 지난 번 분석에서는 하나의 csv 파일을 불러왔기 때문에 loading 시 큰 어려움이 없었다. 하지만 이번에는 10개의 csv 파일을 불러와야 하기 때문에 다른 방법을 통해 데이터를 불러올 것이다. 
-
 ```{r}
 
 Population_19 <- "year_19"
@@ -61,7 +61,11 @@ year_19_pop_data_frame <- as.data.frame(year_19_data)
 
 ```
 
-# 데이터 가공
+
+# 데이터 가공 및 NA 파악
+
+이제 불러온 데이터 구조를 파악하고, 분석목적에 맞게 가공을 해줄 것이다. NA와 NULL은 없었으나, 데이터 속성변환이 필요한 것들이 보여 바꿔주었다. 첫번째, 기본적으로 서울시 내의 유동인구를 조사한 것이므로 각 행에 '시(city)'를 포함시킬 필요가 없어 해당 컬럼을 제거했다. 이것은 타이틀 제목을 통해 보여줄 수 있는 부분이고, 포함시켜서 분석을 하는 것이 큰 의미가 없기 때문이다. 두번째, 날짜를 날짜형 데이터에 맞게 바꿔주었다. 원래 숫자형으로 되어있었는데, 이는 다닥다닥 붙어 있어 가독성이 떨어지고, 월(Month)이나 일(Date)를 추출할 때, 숫자형이라면 인식하는데 어려움이 있을 것 같았다. 세번째, 컬럼명을 영문화 시켰다. R 환경에서는 한글에 대한 지원도가 떨어지는 편이고, 기본 함수들도 모두 영문이므로 통일성과 호환성을 고려해 영문화했다. 네번째, 범주형 데이터들에 한하여, 펙터화 시키고 레벨을 지정해주었다. 
+
 ```{r}
 
 head(str(year_19_pop_data_frame, 50))
@@ -96,7 +100,19 @@ year_19_pop_data_frame$Time <- as.numeric(year_19_pop_data_frame$Time)
 
 ```
 
+
 # 그룹화
+
+정리된 데이터를 분류기준에 맞추어 그룹화 시켜보았다. 월별, 요일별 데이터도 파악해보고 싶어, mutate()함수를 사용하여 월별, 요일별 컬럼을 생성해주었다. 
+
+<br>
+
+**월별**
+
+<br>
+
+12월의 유동인구 수가 가장 많았다. 예측하건데, 연말시즌에는 대부분의 사람들이 모임을 많이 가지기 때문일 것이라는 생각을 해볼 수 있다. 한해의 마지막 달이기도 하며, 새해를 맞이할 준비를 하는 시기이기 때문에 다른 월에 비해 의미와 상징성이 있다고 할 수 있다. 이러한 이유로 많은 사람들이 자신이 속한 그룹의 구성원과 지난 일년간의 회포를 풀기도 하고, 그간 미뤄두었던 약속들이 연말돼서야 성사되는 경우가 적지 않고 볼 수 있다. 
+
 
 ```{r fig.height=8, fig.width = 18, message=FALSE}
 # 월별로 그룹화한 month 컬럼 생성
@@ -106,27 +122,79 @@ year_19_pop_data_frame <- year_19_pop_data_frame %>%
 # month 컬럼 펙터화
 year_19_pop_data_frame$Month <- as.factor(year_19_pop_data_frame$Month)
 
+# is.factor(year_19_pop_data_frame$Month)
+# month(year_19_pop_data_frame$Month, label = TRUE) 
+
 # 요일별로 그룹화한 Wday 컬럼 생성
 year_19_pop_data_frame <- year_19_pop_data_frame %>% 
   mutate(Wday = weekdays.POSIXt(year_19_pop_data_frame$Date))
 
-str(year_19_pop_data_frame)
-summary(year_19_pop_data_frame)
+# Wday 컬럼 팩터화
+year_19_pop_data_frame$Wday <- as.factor(year_19_pop_data_frame$Wday)
+
+# Time 컬럼 펙터화
+year_19_pop_data_frame$Time <- as.factor(year_19_pop_data_frame$Time)
+
+# str(year_19_pop_data_frame)
+# summary(year_19_pop_data_frame)
 
 
-# 시간별
+# 월별 : 12월에 유동인구수가 제일 많음. 
+Month_grouping <- year_19_pop_data_frame %>% 
+  group_by(Month, Sex) %>% 
+  summarize(Mon_pop = sum(Population)) %>%
+  arrange(desc(Mon_pop, Month)) %>% as.data.frame()
+
+# # 월별, 지역별 
+# Month_grouping <- year_19_pop_data_frame %>% 
+#   group_by(Month, Town) %>% 
+#   summarize(Mon_pop = sum(Population)) %>%
+#   arrange(desc(Mon_pop, Town)) %>%  as.data.frame()
+
+# 시간별 : 3시에 유동인구수가 제일 많음.
 Time_grouping <- year_19_pop_data_frame %>% 
-  group_by(Time) %>% 
+  group_by(Time, Sex) %>% 
   summarize(Time_Pop = sum(Population)) %>% 
-  arrange(desc(Time_Pop))
+  arrange(desc(Time_Pop)) %>% as.data.frame()
 
 
-# 요일별
+# 요일별 : 화요일 유동인구수가 제일 많음.
 Wday_grouping <- year_19_pop_data_frame %>% 
-  group_by(Wday) %>% 
+  group_by(Wday, Sex) %>% 
   summarize(Wday_Pop = sum(Population)) %>% 
-  arrange(desc(Wday_Pop))
+  arrange(desc(Wday_Pop)) %>% as.data.frame()
 
+# 성별 : 여성 유동인구 수가 더 많음
+Sex_grouping <- year_19_pop_data_frame %>% 
+  group_by(Sex) %>% 
+  summarize(Sex_Pop = sum(Population)) %>% 
+  arrange(desc(Sex_Pop)) %>% as.data.frame()
+
+# 지역별 : 1위 강남구 
+Town_grouping <- year_19_pop_data_frame %>% 
+  group_by(Town) %>% 
+  summarize(Town_Pop = sum(Population)) %>% 
+  arrange(desc(Town_Pop)) %>% as.data.frame()
+
+# 여성, 지역, 시간, 월별 유동인구수 그룹화
+Wom_Pop_grouping <- year_19_pop_data_frame %>% 
+  group_by(Sex, Town, Time, Month) %>% 
+  summarize(W_T_T_M = sum(Population)) %>%
+  filter(Sex == "여성") %>% 
+  arrange(desc(W_T_T_M, Time)) %>%  as.data.frame()
+
+# 남성, 지역, 시간, 월별, 유동인구수 그룹화
+Man_Pop_grouping <- year_19_pop_data_frame %>% 
+  group_by(Sex, Town, Time, Month) %>% 
+  summarize(M_T_T_M = sum(Population)) %>% 
+  filter(Sex == "남성")  %>% 
+  arrange(desc(M_T_T_M, Time)) %>%  as.data.frame()
+
+# 월별, 요일별 유동인구수 그룹화
+Monnth_Wday_grouping <- year_19_pop_data_frame %>% 
+  group_by(Month, Date, Wday) %>% 
+  summarize(Mon_Wday_Pop = sum(Population)) %>% 
+  arrange(desc(Mon_Wday_Pop)) %>% as.data.frame()
 
 
 
@@ -180,11 +248,18 @@ Wday_grouping <- year_19_pop_data_frame %>%
 
 # 시각화
 
-```{r}
+```{r fig.height=8, fig.width = 17, message=FALSE}
 # 시간별 시각화 
 ggplot(Time_grouping, aes(Time, Time_Pop)) +
- # geom_bar() +
- geom_line(size=5, color="blue",  linetype = 1) +
+  geom_col(aes(fill = Sex)) +
+  scale_y_continuous(labels =  comma)+
+    ggtitle( "19년 시간대별 유동인구 그래프", subtitle = ("기간 : 19.03 ~ 19.12")) +
+  labs(x= "시간", y="유동인구 수") 
+
+
+  ggplot(Time_grouping, aes(Time, Time_Pop)) +
+ # # geom_bar() +
+ # geom_line(size=5, color="blue",  linetype = 1) +
  geom_point(size=5,alpha=9, shape=21,color = "#ff6600",
  fill = 'red', stroke = 3) +
   theme_calc() +
@@ -192,15 +267,15 @@ ggplot(Time_grouping, aes(Time, Time_Pop)) +
   theme(plot.title = element_text(face="bold", hjust=0.5, vjust=1, size=30, color="#008B8B")) +
   xlab("시간대") +
   ylab("유동인구") +
-  theme(axis.title.x=element_text(family="NanumGothic",  
-                                        face="bold",          
-                                        hjust=0.5,              
-                                        size=25,               
-                                        color="Black",        
-                                        angle=0), 
+  theme(axis.title.x=element_text(family="NanumGothic",
+                                        face="bold",
+                                        hjust=0.5,
+                                        size=25,
+                                        color="Black",
+                                        angle=0),
    axis.title.y=element_text(family="NanumGothic",
                                         face="bold",
-                                        vjust=0.5,              
+                                        vjust=0.5,
                                         size=25,
                                         color="Black",
                                         angle=0)) +
@@ -210,7 +285,182 @@ ggplot(Time_grouping, aes(Time, Time_Pop)) +
   theme(axis.text.x = element_text(size=13, face ="bold")) +
   theme(axis.text.y = element_text(size=20))
 
-# 월별 시각화
+# 월별, 성별 시각화
+ggplot(Month_grouping, aes(x=reorder(Month, -Mon_pop), y=Mon_pop)) + 
+  geom_col(aes(fill=Sex)) +
+  ggtitle( "19년 월별 유동인구 그래프", subtitle = ("기간 : 19.03 ~ 19.12")) +
+  labs(x= "월", y="유동인구수") +
+  scale_y_continuous(labels =  comma)
+   # coord_flip() 
+  # scale_y_continuous(breaks = c(2764211800, 3158641740))
+  # coord_cartesian(ylim=c(2764211800, 3158641740))
+
+#ax(Month_grouping$Mon_pop)
+  #  theme(axis.title.x=element_text(family="NanumGothic",  
+  #                                       face="bold",          
+  #                                       hjust=0.5,              
+  #                                       size=25,               
+  #                                       color="Black",        
+  #                                       angle=0), 
+  #  axis.title.y=element_text(family="NanumGothic",
+  #                                       face="bold",
+  #                                       vjust=0.5,              
+  #                                       size=25,
+  #                                       color="Black",
+  #                                       angle=0)) +
+  # scale_y_continuous(limits=c(min(Month_grouping$Mon_pop),
+  #                             max(Month_grouping$Mon_pop)),
+  #                             labels=scales::comma) +
+  # theme(axis.text.x = element_text(size=13, face ="bold")) +
+  # theme(axis.text.y = element_text(size=20))
+  
+  
+  # scale_y_continuous(limits=c(min(Month_grouping$Mon_pop),
+  #                             max(Month_grouping$Mon_pop)),
+  #                             labels=scales::comma)
+# geom_bar(stat="identity") +
+  # geom_col(mapping = aes(fill = Month),  width = 0.7,
+  #          alpha = 0.9) +
+  # geom_bar(stat = "identity") +
+ # geom_line(size=5, color="blue",  linetype = 1) +
+ # geom_point(size=5,alpha=9, shape=21,color = "#ff6600",
+ # fill = 'red', stroke = 3) +
+ #  theme_calc() +
+ #  ggtitle("19년 월별 유동인구수") +
+ #  theme(plot.title = element_text(face="bold", hjust=0.5, vjust=1, size=30, color="#008B8B")) +
+ #  xlab("월") +
+ #  ylab("유동인구") +
+ #  theme(axis.title.x=element_text(family="NanumGothic",
+ #                                        face="bold",
+ #                                        hjust=0.5,
+ #                                        size=25,
+ #                                        color="Black",
+ #                                        angle=0),
+ #   axis.title.y=element_text(family="NanumGothic",
+ #                                        face="bold",
+ #                                        vjust=0.5,
+ #                                        size=25,
+ #                                        color="Black",
+ #                                        angle=0)) +
+ #  scale_y_continuous(limits=c(min(Time_grouping$Time_Pop),
+ #                              max(Time_grouping$Time_Pop)),
+ #                              labels=scales::comma) +
+ #  theme(axis.text.x = element_text(size=13, face ="bold")) +
+ #  theme(axis.text.y = element_text(size=20))
+
+# hist(Month_grouping$Mon_pop)
+
+# ggplot(x = Month_grouping$Month y=Month_grouping$Mon_pop,
+#      breaks = 10,
+#      ylim = c(0,35),
+#      labels = TRUE,
+#      main = '2017 프로야구 타자 분포 (OPS 기준)',
+#      xlab = 'OPS (장타율 + 출루율)',
+#      ylab = '빈도수',
+#      family = 'NanumGothic')
+
+
+# 요일별 시각화
+
+# Wday_grouping <- year_19_pop_data_frame %>% 
+#   group_by(Wday) %>% 
+#   summarize(Wday_Pop = sum(Population)) %>% 
+#   arrange(desc(Wday_Pop)) %>% as.data.frame()
+ggplot(Wday_grouping, aes(x= reorder(Wday, -Wday_Pop) , y=Wday_Pop)) +
+      geom_col(aes( fill = Sex)) +
+  scale_y_continuous(labels =  comma)+
+    ggtitle( "19년 요일별 유동인구 그래프", subtitle = ("기간 : 19.03 ~ 19.12")) +
+  labs(x= "요일", y="유동인구 수") 
+   # scale_y_continuous(limits=c(min(Wday_grouping$Wday_Pop),
+   #                            max(Wday_grouping$Wday_Pop)),
+   #                            labels=scales::comma) +
+
+
+```
+
+
+```{r}
+# ## decision tree
+# # 패키지 설치
+# # rpart, rpart.plot, caret, e1071
+# 
+# 
+# library(rpart)
+# library(rpart.plot)
+# library(caret)
+# library(e1071)
+# 
+# # train/test set
+# 
+# plot(cars)
+# # training set
+# # 모델을 만드는데 필요한 데이터 
+# 
+# # 1:100
+# # 70% 트레이닝, 30% 테스트 
+# # 7:3, 8:2, 7.5:2.5
+# 
+# # data 생성
+# df <- iris
+# 
+# ## sample (무작위 추출)
+# sample(1:100, 70)
+# sample(1:nrow(df),nrow(df)*0.7)
+# sample(1:150,105)
+# 
+# ## sort(정렬)
+# sort(sample(1:100, 70))
+# 
+# # setdiff (집합에 있어서 빼기)
+# setdiff(1:10,4:5)
+# 
+# # test set
+# # 모델을 평가 하는데 필요
+# # train/test sampling
+# training_sampling <- sort(sample(1:nrow(df),nrow(df)*0.7))
+# test_sampling <- setdiff(1:nrow(df), training_sampling)
+# 
+# # nrow, ncol
+# # nrow = number of row
+# # ncol = number of column
+# 
+# ## traing_set, test_set
+# training_set <- df[training_sampling,]
+# test_set <- df[test_sampling,]
+# 
+# # 데이터 파악
+# plot(iris)
+# 
+# # 의사결정나무 모델 사용
+# # rpart()
+# # rpart("종속변수" ~ "독립변수", data)
+# # . = all
+# # rpart_m <- rpart(Species ~ . , data = training_set)
+# rpart_m <- rpart(Species ~ Petal.Length + Petal.Width , data = training_set)
+# rpart_m
+# 
+# # rpart모델 시각화(rpart 기본 패키지)
+# plot(rpart_m, margin=.2)
+# text(rpart_m, cex=1.5)
+# 
+# # rpart.plot 사용한 시각화
+# prp(rpart_m, type=4, extra=2, digits=3)
+# 
+# 
+# 
+# 
+# # 이 모델이 잘 적합 되었나 확인 
+# # fitted
+# rpart_f <- predict(rpart_m, type="class")
+# table(rpart_f, training_set$Species)
+# 
+# 
+# # 이 모델을 test셋에다가 했을때 어떤 결과를 나타내냐
+# rpart_p <- predict(rpart_m, newdata=test_set, type = "class")
+# 
+# table(rpart_p, test_set$Species)
+# sum(rpart_p == test_set$Species) / nrow(test_set)
+# 
 
 ```
 
