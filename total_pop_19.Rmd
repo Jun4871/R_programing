@@ -120,6 +120,37 @@ year_19_pop_data_frame$Population <- as.numeric(year_19_pop_data_frame$Populatio
 
 ```{r fig.height=8, fig.width = 18, message=FALSE}
 
+
+# training_set <- training_set %>% 
+#   mutate(Ages = case_when(
+#     Age < 10 ~ "Under 10",
+#     Age < 20 ~ "10 ~ 20",
+#     Age < 30 ~ "20 ~ 30",
+#     Age < 40 ~ "30 ~ 40",
+#     Age < 50 ~ "40 ~ 50",
+#     Age < 60 ~ "50 ~ 60",
+#     TRUE ~ "over 60"
+#   )) 
+# 
+# training_set$Ages <- 
+#   factor(training_set$Ages,
+#          levels = c("Under 10", "10 ~ 20", "20 ~ 30", "30 ~ 40", "40 ~ 50", "50 ~ 60", "over 60"))
+# 
+# ggplot(training_set, aes(x = Ages)) +
+#   geom_bar() +
+#   theme(axis.text.x = element_text(size=20)) +
+#   theme(axis.text.y = element_text(size=20))
+
+# str(year_19_pop_data_frame)
+# 
+# a <- year_19_pop_data_frame %>% 
+#   mutate(Weekend = case_when(
+#     Wday "Satuday" ~ "Sunday",
+#     TRUE
+#   ))
+
+
+
 # 월별로 그룹화한 month 컬럼 생성
 year_19_pop_data_frame <- year_19_pop_data_frame %>% 
   mutate(Month = month(year_19_pop_data_frame$Date))
@@ -220,8 +251,7 @@ Monnth_Wday_grouping <- year_19_pop_data_frame %>%
 
 
 
-Weekend_Sat <- Wday_grouping_1 %>% 
-  filter(Wday == "Saturday") 
+
   # filter(Wday == "Sunday") 
   # filter(Wday == "Sunday")
 
@@ -229,20 +259,38 @@ Weekend_Sat <- Wday_grouping_1 %>%
 #   group_by()
 #   summarize(Weekend_Sat_Pop = sum(Wday_Pop))
 
-Weekend_Sun <- Wday_grouping_1 %>% 
-  filter(Wday == "Sunday")
-
-cbind(Weekend_Sat, Weekend_Sun)
-rbind(Weekend_Sat, Weekend_Sun)
+# cbind(Weekend_Sat, Weekend_Sun)
+# rbind(Weekend_Sat, Weekend_Sun)
 
 
 
 # 주말만 뺀 데이터 
+Weekend_Sat <- Wday_grouping_1 %>% 
+  filter(Wday == "Saturday") 
+Weekend_Sun <- Wday_grouping_1 %>% 
+  filter(Wday == "Sunday")
+
 Weekend_for_compare <- rbind(Weekend_Sat, Weekend_Sun)
-str(Weekend_for_compare)
 as.data.frame(Weekend_for_compare)
 
-# 
+
+# 평일만 뺀 데이터
+Monday <- Wday_grouping_1 %>% 
+  filter(Wday == "Monday")
+Tuesday <- Wday_grouping_1 %>% 
+   filter(Wday == "Tuesday")
+Wednesday <- Wday_grouping_1 %>% 
+   filter(Wday == "Wednesday") 
+Thursday <- Wday_grouping_1 %>% 
+    filter(Wday == "Thursday")
+Friday <- Wday_grouping_1 %>% 
+  filter(Wday == "Friday") 
+
+
+Weekday_for_compare <- as.data.frame(rbind(Monday, Tuesday, Wednesday, Thursday, Friday))
+
+
+
 # Weekend_for_compare <- year_19_pop_data_frame$
 
 
@@ -395,9 +443,14 @@ ggplot(Wday_grouping, aes(x= reorder(Wday, -Wday_Pop) , y=Wday_Pop)) +
 
 # 주말 시각화
 
-```{r}
-Weekend_for_compare
+```{r fig.height=8, fig.width = 17, message=FALSE}
+
 ggplot(Weekend_for_compare, aes(x= Wday, y= Wday_Pop)) +
-  geom_col(fill = Sex)
+  geom_col() +
+   scale_y_continuous(labels =  comma)+
+    ggtitle( "19년 주말 유동인구 그래프", subtitle = ("기간 : 19.03 ~ 19.12")) +
+  labs(x= "요일", y="유동인구 수")  +
+   theme(axis.text.x = element_text(size=20)) +
+  theme(axis.text.y = element_text(size=20))
 ```
 
