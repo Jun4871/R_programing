@@ -31,7 +31,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # 라이브러리 활성화
 
 데이터 분석에 앞서 필요한 도구를  준비하는 단계로 아래 라이브러리들을 활용하였다.  
-```{r}
+```{r message=FALSE}
 library(tidyverse)
 library(fs)
 library(lubridate)
@@ -48,13 +48,14 @@ library(formattable)
 # 데이터 로드
 
 지난 번 분석에서는 하나의 csv 파일을 불러왔기 때문에 loading 시 큰 어려움이 없었다. 하지만 이번에는 10개의 csv 파일을 불러와야 하기 때문에 다른 방법을 통해 데이터를 불러올 것이다. 
-```{r}
+```{r message=FALSE}
 
 Population_19 <- "year_19"
 year_19_pop <- fs::dir_ls(Population_19) 
 
 # 데이터 취합
-year_19_data <- year_19_pop %>% map_dfr(read_csv) 
+year_19_data <- year_19_pop %>%
+  map_dfr(read_csv) 
 
 # 데이터 프레임 형식으로 변환
 year_19_pop_data_frame <- as.data.frame(year_19_data)
@@ -67,6 +68,9 @@ year_19_pop_data_frame <- as.data.frame(year_19_data)
 이제 불러온 데이터 구조를 파악하고, 분석목적에 맞게 가공을 해줄 것이다. NA와 NULL은 없었으나, 데이터 속성변환이 필요한 것들이 보여 바꿔주었다. 첫번째, 기본적으로 서울시 내의 유동인구를 조사한 것이므로 각 행에 '시(city)'를 포함시킬 필요가 없어 해당 컬럼을 제거했다. 이것은 타이틀 제목을 통해 보여줄 수 있는 부분이고, 포함시켜서 분석을 하는 것이 큰 의미가 없기 때문이다. 두번째, 날짜를 날짜형 데이터에 맞게 바꿔주었다. 원래 숫자형으로 되어있었는데, 이는 다닥다닥 붙어 있어 가독성이 떨어지고, 월(Month)이나 일(Date)를 추출할 때, 숫자형이라면 인식하는데 어려움이 있을 것 같았다. 세번째, 컬럼명을 영문화 시켰다. R 환경에서는 한글에 대한 지원도가 떨어지는 편이고, 기본 함수들도 모두 영문이므로 통일성과 호환성을 고려해 영문화했다. 네번째, 범주형 데이터들에 한하여, 펙터화 시키고 레벨을 지정해주었다. 
 
 ```{r}
+year_19_pop_data_frame2 <- year_19_pop_data_frame
+
+year_19_pop_data_frame <- year_19_pop_data_frame2
 
 head(str(year_19_pop_data_frame, 50))
 summary(year_19_pop_data_frame)
@@ -81,7 +85,7 @@ year_19_pop_data_frame <- year_19_pop_data_frame[,-5]
 year_19_pop_data_frame$일자 <- ymd(year_19_pop_data_frame$일자)
 
 # 컬럼명 영문화
-colnames(year_19_pop_data_frame) <- c("Date", "Time","Age", "Sex", "Town","Population")
+colnames(year_19_pop_data_frame) <- c("Date", "Hour","Age", "Sex", "Town","Population")
 
 # Age 컬럼 펙터화 
 year_19_pop_data_frame$Age <- factor(year_19_pop_data_frame$Age, levels = c("20","30","40","50","60","70"))
@@ -92,26 +96,67 @@ year_19_pop_data_frame$Sex <- factor(year_19_pop_data_frame$Sex, levels = c("남
 # Town 컬럼 펙터화
 year_19_pop_data_frame$Town <- as.factor(year_19_pop_data_frame$Town)
 
-# Time 컬럼 정수화
-year_19_pop_data_frame$Time <- as.numeric(year_19_pop_data_frame$Time)
+# Hour 컬럼 정수화
+year_19_pop_data_frame$Hour <- as.numeric(year_19_pop_data_frame$Hour)
 
 # Population 정수로 변환
 year_19_pop_data_frame$Population <- as.numeric(year_19_pop_data_frame$Population)
 
-# year_19_pop_data_frame$Time <- as.integer(year_19_pop_data_frame$Time)
-# 
-# year_19_pop_data_frame$Population <- as.integer(year_19_pop_data_frame$Population)
-
+str(year_19_pop_data_frame)
 ```
 
 
 # 그룹화
 
-정리된 데이터를 분류기준에 맞추어 그룹화 시켜보았다. 월별, 요일별 데이터도 파악해보고 싶어, mutate()함수를 사용하여 월별, 요일별 컬럼을 생성해주었다. 
+정리된 데이터를 분류기준에 맞추어 그룹화 시켜보았다. 월별, 요일별 데이터도 파악해보고 싶어, mutate()함수를 사용하여 월별, 요일별 컬럼을 생성해주었다.
+
+```{r}
+# 월별로 그룹화한 month 컬럼 생성
+year_19_pop_data_frame_2 <- year_19_pop_data_frame %>% 
+  mutate(Month = month(year_19_pop_data_frame$Date),
+         Wday = wday(year_19_pop_data_frame$Date, TRUE))  %>%
+  mutate(Week = case_when(
+    "Sun" == Wday ~ "Weeks",
+    "Sat" == Wday ~ "Weeks",
+    TRUE ~  "Workdays"
+      ),
+    Season = case_when(
+      7 == Month ~ "Summer",
+      8 == Month ~ "Summer",
+      12 == Month ~ "Winter",
+      1 == Month ~ "Winter",
+      2 == Month ~ "Winter",
+      TRUE ~ "Spring_Fall"
+    ))
+
+year_19_pop_data_frame <- year_19_pop_data_frame_2
+
+
+for(i in c(2,3,4,5,7,8,9)) {
+  year_19_pop_data_frame[,i] <- as.factor(year_19_pop_data_frame[,i])
+}
+
+# str(year_19_pop_data_frame)
+```
+
 
 <br>
 
-**월별**
+### 월별
+
+```{r}
+# 월별 : 12월에 유동인구수가 제일 많음. 
+Month_grouping <- year_19_pop_data_frame %>% 
+  group_by(Month) %>% 
+  summarize(Mon_pop = sum(Population)) %>%
+  arrange(desc(Mon_pop, Month)) 
+
+
+Month_grouping %>% 
+  datatable()
+
+```
+
 
 <br>
 
@@ -121,46 +166,6 @@ year_19_pop_data_frame$Population <- as.numeric(year_19_pop_data_frame$Populatio
 ```{r fig.height=8, fig.width = 18, message=FALSE}
 
 
-# training_set <- training_set %>% 
-#   mutate(Ages = case_when(
-#     Age < 10 ~ "Under 10",
-#     Age < 20 ~ "10 ~ 20",
-#     Age < 30 ~ "20 ~ 30",
-#     Age < 40 ~ "30 ~ 40",
-#     Age < 50 ~ "40 ~ 50",
-#     Age < 60 ~ "50 ~ 60",
-#     TRUE ~ "over 60"
-#   )) 
-# 
-# training_set$Ages <- 
-#   factor(training_set$Ages,
-#          levels = c("Under 10", "10 ~ 20", "20 ~ 30", "30 ~ 40", "40 ~ 50", "50 ~ 60", "over 60"))
-# 
-# ggplot(training_set, aes(x = Ages)) +
-#   geom_bar() +
-#   theme(axis.text.x = element_text(size=20)) +
-#   theme(axis.text.y = element_text(size=20))
-
-# str(year_19_pop_data_frame)
-# 
-# a <- year_19_pop_data_frame %>% 
-#   mutate(Weekend = case_when(
-#     Wday "Satuday" ~ "Sunday",
-#     TRUE
-#   ))
-
-
-
-# 월별로 그룹화한 month 컬럼 생성
-year_19_pop_data_frame <- year_19_pop_data_frame %>% 
-  mutate(Month = month(year_19_pop_data_frame$Date))
-
-# month 컬럼 펙터화
-year_19_pop_data_frame$Month <- as.factor(year_19_pop_data_frame$Month)
-
-# is.factor(year_19_pop_data_frame$Month)
-# month(year_19_pop_data_frame$Month, label = TRUE) 
-
 # 요일별로 그룹화한 Wday 컬럼 생성
 year_19_pop_data_frame <- year_19_pop_data_frame %>% 
   mutate(Wday = weekdays.POSIXt(year_19_pop_data_frame$Date))
@@ -168,18 +173,12 @@ year_19_pop_data_frame <- year_19_pop_data_frame %>%
 # Wday 컬럼 팩터화
 year_19_pop_data_frame$Wday <- as.factor(year_19_pop_data_frame$Wday)
 
-# Time 컬럼 펙터화
-year_19_pop_data_frame$Time <- as.factor(year_19_pop_data_frame$Time)
-
-# str(year_19_pop_data_frame)
-# summary(year_19_pop_data_frame)
+# Hour 컬럼 펙터화
+year_19_pop_data_frame$Hour <- as.factor(year_19_pop_data_frame$Hour)
 
 
-# 월별 : 12월에 유동인구수가 제일 많음. 
-Month_grouping <- year_19_pop_data_frame %>% 
-  group_by(Month, Sex) %>% 
-  summarize(Mon_pop = sum(Population)) %>%
-  arrange(desc(Mon_pop, Month)) %>% as.data.frame()
+
+
 
 # # 월별, 지역별 
 # Month_grouping <- year_19_pop_data_frame %>% 
@@ -187,11 +186,7 @@ Month_grouping <- year_19_pop_data_frame %>%
 #   summarize(Mon_pop = sum(Population)) %>%
 #   arrange(desc(Mon_pop, Town)) %>%  as.data.frame()
 
-# 시간별 : 3시에 유동인구수가 제일 많음.
-Time_grouping <- year_19_pop_data_frame %>% 
-  group_by(Time) %>% 
-  summarize(Time_Pop = sum(Population)) %>% 
-  arrange(desc(Time_Pop, Time)) %>% as.data.frame()
+
 
 
 # 요일별 : 화요일 유동인구수가 제일 많음.
@@ -220,17 +215,17 @@ Town_grouping <- year_19_pop_data_frame %>%
 
 # 여성, 지역, 시간, 월별 유동인구수 그룹화
 Wom_Pop_grouping <- year_19_pop_data_frame %>% 
-  group_by(Sex, Town, Time, Month) %>% 
+  group_by(Sex, Town, Hour, Month) %>% 
   summarize(W_T_T_M = sum(Population)) %>%
   filter(Sex == "여성") %>% 
-  arrange(desc(W_T_T_M, Time)) %>%  as.data.frame()
+  arrange(desc(W_T_T_M, Hour)) %>%  as.data.frame()
 
 # 남성, 지역, 시간, 월별, 유동인구수 그룹화
 Man_Pop_grouping <- year_19_pop_data_frame %>% 
-  group_by(Sex, Town, Time, Month) %>% 
+  group_by(Sex, Town, Hour, Month) %>% 
   summarize(M_T_T_M = sum(Population)) %>% 
   filter(Sex == "남성")  %>% 
-  arrange(desc(M_T_T_M, Time)) %>%  as.data.frame()
+  arrange(desc(M_T_T_M, Hour)) %>%  as.data.frame()
 
 # 월별, 요일별 유동인구수 그룹화
 Monnth_Wday_grouping <- year_19_pop_data_frame %>% 
@@ -238,114 +233,112 @@ Monnth_Wday_grouping <- year_19_pop_data_frame %>%
   summarize(Mon_Wday_Pop = sum(Population)) %>% 
   arrange(desc(Mon_Wday_Pop)) %>% as.data.frame()
 
-# # 주말만
-# Weekend <- year_19_pop_data_frame[(year_19_pop_data_frame$Wday == "Saturdy") & (year_19_pop_data_frame$Wday == "Sunday"),]
-#          #                              myData = df[(df$weekday == '토요일') | (df$weekday == "일요일"),]
-# 
-# Weekend <- year_19_pop_data_frame$Wday["Sunday"] == T
-# 
-# 
-# # Weekend <- year_19_pop_data_frame$Wday %>% 
-# #   filter(year_19_pop_data_frame$Population == )
-# # str(Weekend)
 
+# 월별, 성별 유동인구수 그룹화
+Monnth_sex_grouping <- year_19_pop_data_frame %>% 
+  group_by(Month, Sex) %>% 
+  summarize(Mon_Wday_Pop = sum(Population)) %>% 
+  arrange(desc(Mon_Wday_Pop)) %>% as.data.frame()
 
-
-
-  # filter(Wday == "Sunday") 
-  # filter(Wday == "Sunday")
-
-# Weekend_Sat <- Weekend_Sat %>%
-#   group_by()
-#   summarize(Weekend_Sat_Pop = sum(Wday_Pop))
-
-# cbind(Weekend_Sat, Weekend_Sun)
-# rbind(Weekend_Sat, Weekend_Sun)
-
-
-
-# 주말만 뺀 데이터 
-Weekend_Sat <- Wday_grouping_1 %>% 
-  filter(Wday == "Saturday") 
-Weekend_Sun <- Wday_grouping_1 %>% 
-  filter(Wday == "Sunday")
-
-Weekend_for_compare <- rbind(Weekend_Sat, Weekend_Sun)
-as.data.frame(Weekend_for_compare)
-
-
-# 평일만 뺀 데이터
-Monday <- Wday_grouping_1 %>% 
-  filter(Wday == "Monday")
-Tuesday <- Wday_grouping_1 %>% 
-   filter(Wday == "Tuesday")
-Wednesday <- Wday_grouping_1 %>% 
-   filter(Wday == "Wednesday") 
-Thursday <- Wday_grouping_1 %>% 
-    filter(Wday == "Thursday")
-Friday <- Wday_grouping_1 %>% 
-  filter(Wday == "Friday") 
-
-
-Weekday_for_compare <- as.data.frame(rbind(Monday, Tuesday, Wednesday, Thursday, Friday))
-
-
-
-# Weekend_for_compare <- year_19_pop_data_frame$
-
-
-# Weekend_DF <- as.data.frame(Weekend_Sat,Weekend_Sun)
-
-
-# year_19_pop_data_frame <- year_19_pop_data_frame %>% 
-#   mutate(Weekend = )
-
-
-# # 월별 유동인구수 
-# Month_grouping <- year_19_pop_data_frame %>% 
-#   group_by(Town) %>% 
-#   summarise(Monthly_pop = sum(Population)) 
-# 
-# 
-# year_19_pop_data_frame$Population <- as.numeric(year_19_pop_data_frame$Population)
-# str(year_19_pop_data_frame)
-  
-
-
-#   library(lubridate)
-# # month 컬럼 추가
-# year_18_food_data_frame <- year_18_food_data_frame %>% 
-#  mutate(month = month(year_18_food_data_frame$date))
-# # factor 로 변경
-# year_18_food_data_frame$month <- as.factor(year_18_food_data_frame$month)
-  
-#   # normalize
-# normalize <- function(x) {
-#   ((x - min(x))*100/(max(x)-min(x))) 
-# }
-# # normalized by group
-# data_by_month_county <- data_by_month_county %>% 
-#   group_by(county, type) %>% 
-#   mutate(normalized = normalize(call)) %>% 
-#   arrange(month) %>%
-#   arrange(county) %>% 
-#   arrange(type) %>%
-#   as.data.frame()
-# > data_by_month_county
-# month   county    type  call  normalized
-# 1       1   강남구 chicken 36534 100.0000000
-# 2       2   강남구 chicken 30806  50.4541130
-# 3       3   강남구 chicken 32427  64.4753914
-# 4       4   강남구 chicken 32470  64.8473315
-# 5       5   강남구 chicken 30224  45.4199464
-# 6       6   강남구 chicken 33320  72.1996367
-# 7       7   강남구 chicken 32650  66.4042903
-# 8       8   강남구 chicken 32674  66.6118848
-# 9       9   강남구 chicken 26771  15.5522879
-# 10     10   강남구 chicken 27384  20.8545974
-# 11     11   강남구 chicken 24973   0.0000000
-# 12     12   강남구 chicken 28241  28.2674509
+Hour_grouping <- year_19_pop_data_frame %>% 
+  group_by(Hour) %>% 
+  summarize(Hour_Pop = sum(Population)) %>% 
+  arrange(desc(Hour_Pop, Hour))
 ```
+
+
+
+### 시간별
+
+```{r}
+
+# 시간별 : 3시에 유동인구수가 제일 많음.
+Hour_grouping <- year_19_pop_data_frame %>% 
+  group_by(Hour) %>% 
+  summarize(Hour_Pop = sum(Population)) %>% 
+  arrange(desc(Hour_Pop, Hour))
+
+Hour_grouping %>% 
+  datatable()
+
+```
+
+15시의 유동인구수가 가장 많았고, 그 다음으로 16시의 유동인구수가 가장 많았다. 
+
+<br>
+
+<p align="center">
+  <b>**왜 그럴까?** </b><br>
+</p>
+
+--- 
+
+생각을 해봤을 때, 3시와 4시의 유동인구가 가장 많이 나왔다는 것은 납득이 가지 않는다. 최초 출퇴근 시간대나, 또는 주말 피크타임 때가 유동인구수가 높을 것이라 판단이 되는데, 3시와 4시는 뭔가 좀 이상하다. 첫번째 추측으로는 현재 그루핑은 주말과 평일을 구분지어놓지 않았고, 한꺼번에 산출했기 때문에 이러한 결과가 나오지 않았나 생각된다. 가령, 평일 출퇴근 시간 약 7~9시는 주말의 경우 한가한 시간이 될 것이다. 주말 3시에서 4시는 평일의 경우 업무시간이기 때문에 유동인구가 그렇게 많지 않을 것으로 본다. 물론 서울시 거주자의 모두가 근무자는 아닐 것이지만, 이를 구분지어서 파악해보자. 
+
+#### 평일 - 시간별 
+
+```{r}
+year_19_pop_data_frame %>%
+  filter(Week == "Workdays") %>% 
+  group_by(Hour) %>% 
+  summarize(Hour_Pop = sum(Population)) %>% 
+  arrange(desc(Hour_Pop, Hour)) %>%
+  datatable()
+```
+
+13시, 15시의 유동인구수가 가장 많은 것으로 나타났다. 아직도 잘 모르겠으니, 주말과 시간별로 파악을 해보자. 
+
+#### 주말 - 시간별 
+
+```{r}
+year_19_pop_data_frame %>%
+  filter(Week != "Workdays") %>%
+  group_by(Hour) %>% 
+  summarize(Hour_Pop = sum(Population)) %>% 
+  arrange(desc(Hour_Pop, Hour)) %>%
+  datatable()
+```
+
+0시와 20시, 18시의 유동인구수가 가장 높게 측정되었다. 
+
+<br>
+
+원인을 알아보려고 주말과 평일을 나눠봤는데, 파악이 힘들었다. 그렇다면 데이터가 시간별로 어떻게 쌓이는지 확인하고자 홈페이지를 찾아가보니 아래와 같이 측정되는 것을 확인할 수 있었다.
+
+
+
+![](Population_img.JPG)
+
+기지국에서 신호를 기반으로 측정한다고 하는데 그 이상은 파악이 힘들었다. 
+
+### 지역별 
+
+```{r}
+Town_grouping <- year_19_pop_data_frame %>%
+  group_by(Town) %>% 
+  summarize(Town_Pop = sum(Population)) %>% 
+  arrange(desc(Town_Pop)) 
+
+Town_grouping %>% 
+  datatable()
+```
+
+역시나 강남구, 송파구의 유동인구수가 가장 많이 나왔다. 두 지역에는 많은 식당들이 즐비하고 있고, 서점, 병원 등 편의시설이 많기로 유명하다. 그래서인지 타 지역에 비해 유독 많은 유동인구수가 측정된 것 같다.
+
+
+### 성별
+
+```{r}
+
+```
+
+### 계절별
+
+
+
+### 주말 - 지역별 - 성별
+
+### 계절 - 주말 - 지역 - 성별
 
 # 시각화
 
@@ -354,29 +347,25 @@ Weekday_for_compare <- as.data.frame(rbind(Monday, Tuesday, Wednesday, Thursday,
 ### 1) 몇시에 유동인구 수가 가장 많을까?
 
 
-
-
-
-
 ```{r fig.height=8, fig.width = 17, message=FALSE}
 # 시간별 시각화 
-# ggplot(Time_grouping, aes(Time, Time_Pop)) +
+# ggplot(Hour_grouping, aes(Hour, Hour_Pop)) +
 #   geom_col(aes(fill = Sex)) +
 #   scale_y_continuous(labels =  comma)+
 #     ggtitle( "19년 시간대별 유동인구 그래프", subtitle = ("기간 : 19.03 ~ 19.12")) +
 #   labs(x= "시간", y="유동인구 수") 
 
 #####
-  ggplot(Time_grouping, aes(Time, Time_Pop)) +
+  ggplot(Hour_grouping, aes(Hour, Hour_Pop)) +
   # geom_col() +
  # geom_line(aes(size=5, color=Sex,  linetype = 1)) +
   # geom_line() +
-  geom_point(size=8,alpha=9,stroke = 2,shape=21,aes(fill = Time_Pop)) +
+  geom_point(size=8,alpha=9,stroke = 2,shape=21,aes(fill = Hour_Pop)) +
    scale_fill_gradient(low = 'yellow',
                       high = 'red') +
   guides(fill="none") +
   theme_calc() +
-  # geom_text(aes(label=rownames(Time_grouping))) +
+  # geom_text(aes(label=rownames(Hour_grouping))) +
   ggtitle("19년 시간대별 유동인구수", subtitle = ("기간 : 19.03 ~ 19.12")) +
   theme(plot.title = element_text(face="bold", hjust=0.5, vjust=1, size=30, color="#008B8B")) +
   xlab("시간대") +
@@ -393,8 +382,8 @@ Weekday_for_compare <- as.data.frame(rbind(Monday, Tuesday, Wednesday, Thursday,
                                         size=25,
                                         color="Black",
                                         angle=0)) +
-  scale_y_continuous(limits=c(min(Time_grouping$Time_Pop),
-                              max(Time_grouping$Time_Pop)),
+  scale_y_continuous(limits=c(min(Hour_grouping$Hour_Pop),
+                              max(Hour_grouping$Hour_Pop)),
                               labels=scales::comma) +
   theme(axis.text.x = element_text(size=20, face ="bold")) +
   theme(axis.text.y = element_text(size=20, face ="bold"))
@@ -411,7 +400,7 @@ Weekday_for_compare <- as.data.frame(rbind(Monday, Tuesday, Wednesday, Thursday,
 
 ```{r fig.height=8, fig.width = 17, message=FALSE}
 # 월별, 성별 시각화
-ggplot(Month_grouping, aes(x=reorder(Month, -Mon_pop), y=Mon_pop)) + 
+ggplot(Monnth_sex_grouping, aes(x=reorder(Month, -Mon_Wday_Pop), y=Mon_Wday_Pop)) + 
   geom_col(aes(fill=Sex)) +
   #ggtitle( "19년 월별 유동인구 그래프", subtitle = ("기간 : 19.03 ~ 19.12")) +
   labs(title = "19년 월별 유동인구 그래프",x= "월", y="유동인구수", subtitle = "기간 : 19.03 ~ 19.12") +
@@ -441,16 +430,4 @@ ggplot(Wday_grouping, aes(x= reorder(Wday, -Wday_Pop) , y=Wday_Pop)) +
 ```
 
 
-# 주말 시각화
-
-```{r fig.height=8, fig.width = 17, message=FALSE}
-
-ggplot(Weekend_for_compare, aes(x= Wday, y= Wday_Pop)) +
-  geom_col() +
-   scale_y_continuous(labels =  comma)+
-    ggtitle( "19년 주말 유동인구 그래프", subtitle = ("기간 : 19.03 ~ 19.12")) +
-  labs(x= "요일", y="유동인구 수")  +
-   theme(axis.text.x = element_text(size=20)) +
-  theme(axis.text.y = element_text(size=20))
-```
 
