@@ -42,6 +42,46 @@ library(ggplot2)
 library(plotly)
 library(mlbench)
 library(formattable)
+
+###
+
+library(mapproj)
+library(stringi)
+library(devtools)
+library(ggiraphExtra)
+library(dplyr)
+#install.packages("devtools")
+library(kormaps2014)
+library(maps)
+#remove.packages("devtools")
+# 
+# #devtools::install_github("cardiomoon/kormaps2014", force = TRUE)
+# library(kormaps2014)
+# 
+# str(korpop1)
+# korpop1 <- rename(korpop1, pop = 총인구_명, name = 행정구역별_읍면동) 
+# 
+# str(changeCode(kormap1))
+# 
+# ggChoropleth(data = korpop1,      # 지도에 표현할 데이터
+#              aes(fill = pop,      # 색깔로 표현할 변수
+#                  map_id = code,   # 지역 기준 변수
+#                  tooltip = name), # 지도 위에 표시할 지역명
+#              map = kormap1,       # 지도 데이터
+#              interactive = TRUE)  
+# 
+# # 대한민국 시도별 결핵 환자 수 단계 구분도 만들기
+# 
+# str(changeCode(tbc))
+# 
+# tbc$name <- iconv(tbc$name)
+# 
+# ggChoropleth(data = tbc, 
+#              aes(fill = NewPts,
+#                  map_id = code,
+#                  tooltip = name),
+#              map = kormap1,
+#              interactive = TRUE)
 ```
 
 
