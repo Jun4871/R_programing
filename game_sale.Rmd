@@ -1,14 +1,19 @@
 ---
-title: "game_sale"
+title: "finding root cause of sales decreasing"
 author: "Ryu"
-date: '2020 4 4 '
-output: html_document
+date: "`r Sys.Date()`"
+output: 
+   prettydoc::html_pretty:
+    theme: architect
+    df_print: paged
+
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+  
 # Overview 
 
 이번 분석의 목표는 외부자료를 참고하여 실제 데이터를 분석하고 결론을 도출하는 과정을 명확히 이해하고, 의사결정지원이 가능한 결과물을 창출해내는 데 있다. 
@@ -33,6 +38,207 @@ knitr::opts_chunk$set(echo = TRUE)
 
 **해결책**
 
-- 광고를 지난달과 같은 수준으로 한다 ??
+- 광고를 지난달과 같은 수준으로 한다 ?? 
+
+<br>
+
 
 위의 가설을 완성하기 위해서는 매상내역을 조사할 필요가 있다. 이제 필요한 데이터들을 가져와보자. 
+
+<br>
+
+- DAU(Daily Active User) : 하루에 한 번 이상 게임을 이용한 유저의 데이터
+- DPU(Daily Payment User) : 하루에 1원 이상 지불한 유저의 데이터 
+- Install : 게임을 설치하여 이용하기 시작한 날짜 데이터 
+
+```{r}
+library(ggplot2)
+library(scales)
+library(plotly)
+dpu <- read.csv("section3_dpu.csv", header = T, stringsAsFactors = F)
+
+dau <- read.csv("section3-dau.csv",header = T, stringsAsFactors = F)  
+
+install <- read.csv("section3-install.csv", header = T, stringsAsFactors = F)
+```
+
+# EDA(Exploratory data analysis)
+
+분석최적화를 위해 각 자료들의 형과 의미하는 바와 정제작업이 필요한 부분을 확인해보자. 
+
+dpu의 경우 4 개의 변수와 884개의 관측치가 존재하는 것을 확인할 수 있었다. 여기서 'app name'은 게임의 종류를 의미하는 것이라고 생각하여 팩터화 시켜주었고, 숫자형으로 되어 있는 user_id 는 식별만 하면 되기때문에 문자형으로 바꿔주었다. 추가적으로 log_date 는 날짜형으로 바꿔주도록 하겠다.  
+```{r message=FALSE,  results = FALSE, fig.align="center", fig.height=8, fig.width = 14}
+str(dpu)
+summary(dpu)
+sum(is.na(dpu))
+
+as.factor(dpu$app_name)
+as.character(dpu$user_id)
+
+library(lubridate)
+library(tidyverse)
+
+dpu$log_date <- dpu$log_date %>%
+  ymd()
+
+dpu$app_name <- dpu$app_name %>% 
+  as.factor()
+
+dpu$user_id <- dpu$user_id %>% 
+  as.character()
+
+str(dpu)
+```
+
+dau는 'payment' 컬럼이 없는 것 빼고는 위 데이터와 동일하므로 같은 방식으로 데이터를 처리해주도록 하자. 
+```{r message=FALSE,  results = FALSE, fig.align="center", fig.height=8, fig.width = 14}
+str(dau)
+summary(dau)
+sum(is.na(dau))
+
+dau$log_date <- dau$log_date %>% 
+  ymd()
+
+dau$app_name <- dau$app_name %>% 
+  as.factor()
+
+dau$user_id <- dau$user_id %>% 
+  as.character()
+
+str(dau)
+
+
+
+```
+
+install 역시 특별한 것이 없으므로 동일하게 처리해주자. 
+```{r message=FALSE,  results = FALSE, fig.align="center", fig.height=8, fig.width = 14}
+str(install)
+summary(install)
+sum(is.na(install))
+
+install$install_date <- install$install_date %>% 
+  ymd()
+
+install$app_name <- install$app_name %>% 
+  as.factor()
+
+install$user_id <- install$user_id %>% 
+  as.character()
+
+str(install)
+```
+
+# Data Cleaning 
+
+본격적으로 분석에 필요한 데이터를 가공하는 과정이다. 위에서 유저의 활동정보(DAU), 과금정보(DPU), 다운시작정보(Install)에 대한 데이터를 가져왔는데 이제 이것을 분석기법에 잘 적용될 수 있도록 정돈해주도록 하자. 진행순서는 다움과 같다. 
+
+- 1. 유저(DAU) 데이터에 이용시작(Install)데이터 결합하기
+
+게임 이용유저 중에서 어떤 날에 게임을 하기 시작했는지, 또 얼마나 있는지를 알아보기 위해 User ID 를 Key 값으로 지정하여, 결합한다.
+
+- 2. 위 데이터에 과금(DPU) 데이터 다시 결합하기
+
+DAU 중에서 어떤 날에 과금된 유저가 얼마나 있는지 조사하기 위해 DPU 데이터를 유저 ID와 과금일을 Key로 할당하여 결합하낟. 이때 과금되지 않은 유저의 데이터는 DPU에 포함되지 않기 때문에 결합한 레코드 뿐만 아니라 결합되지 않은 레코드도 남기도록 한다.
+
+- 3. 비과금 유저의 과금액에 0 넣기
+
+DAU 중에서 과금을 한 것은 일부 유저뿐이다. 위 순서 2에서 DPU와 결합 하지 않은 레코드도 남아 있기 때문에 현재 데이터는 과금액에 결손치가 발생한 상태다. 결손치가 발생한 상태로는 평균 등을 계산할 때 문제가 생긴다. 그래서 이 NA 값을 0으로 대입해서 평균값이나 합계 등의 계산이 가능하도록 만들어 준다.
+
+### 1) DAU 데이터에 Install 데이터 결합
+
+데이터를 결합할 때는 merge() 함수를 사용하며, 'by =' 에는 결합할 두 데이터 모두가 가지고 있는 컬럼인 'user_id' 와 'app_name'을 Key 값으로 지정하여 결합하기로 했엇다. 그 결과로 기존 DAU의 log_date 와 Install의 install_date 를 한 데 모을 수 있었다. 
+
+```{r}
+dau_install <- merge(dau, install, by = c("user_id", "app_name"))
+head(dau_install)
+```
+
+### 2) 지금까지의 데이터 DPU 데이터 결합하기
+
+과금란에 NA가 있는데 이것은 과금을 한 유저는 존재하지만 그렇지 않은 유저는 데이터가 없기 때문에 결합 후 'NA' 라고 나오는 것이다. 실제로는 과금액이 나타내는 수치 데이터와 'NA' 값이 같이 나와야하는데 앞에서 본 레코드는 우연히 모두 'NA'였기 때문에 조금 더 자세히 살펴볼 필요가 있어 보인다. 
+```{r}
+dau_dpu_install <- merge(dau_install, dpu, by = c( "log_date","app_name", "user_id"), all.x = T)
+
+head(dau_dpu_install)
+
+head(na.omit(dau_dpu_install))
+
+```
+
+### 3) 비과금 유저의 과금액에 0 넣기
+
+payment 컬럼에 있는 NA 값을 모두 0으로 할당했다. 이제 연산시 오류없이 계산을 할 수 있다. 상황에 따라 다른 방법들도 있지만, 여기서는 0으로 할당했다. 
+```{r message=FALSE,  results = FALSE, fig.align="center", fig.height=8, fig.width = 14}
+dau_dpu_install$payment[is.na(dau_dpu_install$payment)] <- 0
+# is.na(dau_dpu_install$payment) == TRUE
+head(dau_dpu_install$payment) # 기존에 NA였던 모든 값이 0으로 바뀌었다. 
+```
+
+### 4) 월차 집계하기
+
+이번 사례의 분석 데이터는 연월일을 나타내는 일차데이터이지만, 월별로 분석할 때 필요한 것은 월별 정보 뿐이다. 따라서 데이터에서 연과 월 부분을 뽑아서 집계한다. 
+```{r message=FALSE,  results = FALSE, fig.align="center", fig.height=8, fig.width = 14}
+# 월 항목 추가
+dau_dpu_install$log_month <- substr(dau_dpu_install$log_date, 1, 7)
+dau_dpu_install$install_month <- substr(dau_dpu_install$install_date, 1, 7)
+
+library(plyr)
+mau_payment <- ddply(dau_dpu_install, 
+                     .(log_month, user_id, install_month), # 그룹화
+                     summarize, # 집계명령
+                     payment = sum(payment)) # payment의 합계
+
+head(mau_payment)
+```
+
+### 5) 신규/기존 유저를 구분하는 항목 추가
+
+ifelse() 함수를 사용하여 게임을 설치한 월(month)가 로그인한 월(month)가 같으면 '신규회원'으로 간주한다. 그리고 만약 같다면 이를 'install'로 표기하고, 다르면 'existing'으로 표기하자. 
+
+```{r message=FALSE,  results = FALSE, fig.align="center", fig.height=8, fig.width = 14}
+# 신규/기준 유저 식별하기
+
+mau_payment$user_type <-
+  ifelse(mau_payment$install_month == mau_payment$log_month, 
+         "install", "existing")
+
+mau_payment_summary <- ddply(mau_payment, 
+                             .(log_month, user_type),
+                             summarize,
+                             total_payment = sum(payment)
+                             )
+
+head(mau_payment)
+
+head(mau_payment_summary)
+```
+
+# Visualization
+
+정제한 데이터를 시각화하는 단계이다. 그래프에서도 지난 달에 가입한 신규회원과 이번 달에 가입한 신규회원의 수가 적지 않게 차이남을 확인할 수 있다. 지난 달 신규회원이 달성한 액수는약 50만에 달하는 반면, 이번 달 신규회원의 액수는 29만 정도에 그친 것으로 보이며 이것이 매출감소에 직접적인 영향을 끼친 것으로 해석할 수 있다.  
+
+```{r message=FALSE, fig.align="center", fig.height=7, fig.width = 10}
+
+vis1 <- ggplot(mau_payment_summary, aes(x = log_month, y = total_payment, fill = user_type)) +
+  geom_bar(stat = "identity") +
+  scale_y_continuous(labels = comma)
+
+ggplotly(vis1)
+```
+
+히스토그램을 통한 시각화이다. 신규 유저 데이터만 골라서 이번달에 매상을 확인해보자. 육안으로 보아도 저번 달 신규유저의 과금량이 많고, 이번 달 신규회원은 적음을 알 수 있다.   
+```{r message=FALSE, fig.align="center", fig.height=7, fig.width = 10}
+vis2 <- ggplot(mau_payment[mau_payment$payment > 0 & mau_payment$user_type == "install", ], 
+       aes(x = payment, fill = log_month)) +
+  geom_histogram(position = "dodge", binwidth =  20000) 
+
+ggplotly(vis2)
+
+```
+
+# Result 
+
+현상을 이해하고 문제를 인식하는 데 있어서 데이터 분석은 필수적이라고 할 수 있다. 예를 들면, '매출 감소', '고객 이탈' 등의 현상이 발생했을 때, 데이터를 분석하고 시각화함으로 인해서 문제점을 보다 명확하게 바라볼 수 있다. 더 나아가 변수끼리의 관계를 입증하여 문제 개선안을 객관적인 시각에서 제시할 수도 있을 것이다. 하지만 그러한 통계적 분석 이전에 목적에 맞게 전처리를 해주어야 하기 때문에 이와 같은 전처리 경험들이 조금 더 쌓여야 넓은 시야를 갖고 분석에 임할 수 있을 것 이라는 생각이 들었다. 
+
+
