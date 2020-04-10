@@ -1,0 +1,232 @@
+---
+title: "어느 쪽의 배너광고가 반응이 더 좋은가?"
+author: "Ryu"
+date: '2020 4 10 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Overview
+
+매월 실시하고 있는 세일 결과를 살펴보니, 특정 App의 구매율이 다른 App에 비해 낮은 것이 확인되었다. 구매율이 낮은 원일을 조사해보니, 배너광고에 문제가 있을 수 있다는 것을 알게 되었다. 따라서 새 배너광고를 두 가지로 제작하여 구매율을 높이는데 어느쪽이 더 효율적인지를 검증하고자 한다. 
+
+# Issue-finding
+
+먼저 현실과 이상적인 모습의 차이를 명확히 하기 위해 다른 앱과 해당 앱 간에 어떤 차이점이 존재하는지 가설을 세우도록 하자. <br>
+
+1. 아이템 세일내용에 문제가 있다
+
+- 지금 별로 필요하지 않은 아이템을 내놓고 있다.
+- 세일폭이 별로 크지 않아서 유저에게 크게 어필하지 못하고 있다. <br>
+
+
+2. 배너광고의 표시내용에 문제가 있다. <br>
+
+일단 이 정도의 가설을 세워놓고 1번 가설에 대한 다음과 같은 사실을 담당자로부터 확인하였다고 하자. 
+
+- 아이템 세일에 쓸 만한 것을 내놓았다고 생각하지만 얼마나 사용하고 있는지는 잘 모른다.
+- 세일폭은 50%로 다른 앱과 같고 유저 입장에서도 충분히 저렴하다고 느낄 것이다. 
+
+이것으로 첫번째 가설이 구매율에 영향을 미쳤을 가능성은 낮다고 볼 수 있다. 
+
+다음은 두번째 가설에 대한 추가정보이다.
+
+- 아이템 세일의 배너광고는 해당 앱의 디자이너가 만들어 앱에 따라 품질이 제각각임
+
+- 해당 앱의 배너광고는 항상 클릭률이 낮음
+
+두번째 가설(배너광고의 표시내용에 문제가 있음)에 무게를 실어주는 정보이다. 따라서 배너광고의 클릭률을 높이는 것을 테마로 잡고 분석을 진행해보자. 
+
+# Data loading 
+
+데이터를 가져오기에 앞서 문제를 정리해보자.
+
+문제
+
+- 해당 앱의 배너광고 클릭율이 다른 앱보다 낮다 (사실)
+- 해당 앱의 배너광고 품질에 문제가 있다 (가설)
+
+해결책
+
+- 클릭율이 높은 배너광고를 조사해서 해당 앱의 배너광고를 개선한다 (해결책)
+
+위의 해결책을 적용하려면 어떤 배너광고가 자주 클릭되는지 분명히 할 필요가 있다. 그런데 해당 앱에서는 지금 껏 매월 실시해온 아이템 세일의 배너광고를 한 번도 바꾸지않아 비교할 만한 데이터가 존재하지 않는다.
+
+그래서 이번 사례에서는 2개의 배너광고를 새로 작성해서 어느 쪽이 더 나은지 데이터를 수집하는 것으로 한다. 
+
+**전후비교로는 외부요인을 배제할 수 없음**
+
+2 개의 배너광고 중 어느 쪽이 더 나은지 조사하기 위해서는 어떻게 하면 좋을까? 같은 시기에는 A 배너 광고를 걸어놓고, 다른 시기에는 B 배너 광고를 내거는 전후비교라는 방법이 존재한다. 이 경우 A와 B를 비교하는 것은 A를 계속해서 내걸었을 경우에 예상되는 값과 B의 값을 비교하는 것이 된다.
+하지만 이것으로 정말 올바르게 비교했다고 할 수 있을까?
+이는 외부요인이 개입되었을 가능성을 배제할 수 없기 때문인데 예를 들어,
+
+- 배너 B를 광고하고 있을 때 전체 구매율이 좋았다.
+- 배너 B를 광고하고 있을 때 해당 앱의 다른 이벤트가 크게 히트를 쳤다.
+- 배너 B를 광고하고 있을 때 TV광고가 실시되거나 혹은 방송에 소개되었다. 
+
+등과 같이 원래 비교하고자 했던 '배너 A'와 '배너 B' 이외의 외부요인의 영향을 받게된다. 이런 외부요인으로 인해 구매율이 좋아졌을 경우, 실제로 어떤 배너광고가 구매율 증가를 이끌어냈을지는 알 수 없게된다. 
+
+**A/B 테스트로 외부요인 제거**
+
+이럴 때 편리한 검증 방법으로 A/B 테스트라는 것이 있다. A/B 테스트는 여러 선택지 중에서 어느 것이 가장 좋은 결과를 가져다줄지 알아보기 위한 검증 방법이다. A/B테스트는 초기 도입 시 개발비용이 많이 들지만 비교적 낮은 비용으로 실시할 수 있으며, 수집한 데이터를 통계적으로 취급하기 쉬워서 Web 업계에서 많이 이용하고 있다. 또한 일부 광고업이나 제조업 쪽에서도 실시하고 있다. 
+
+
+```{r message=FALSE}
+ab_test_goal <- read.csv("section5-ab_test_goal.csv", header = T, stringsAsFactors = F)
+ab_test_imp <- read.csv("section5-ab_test_imp.csv", header = T, stringsAsFactors = F)
+library(tidyverse)
+library(lubridate)
+library(plotly)
+library(ggplot2)
+```
+
+# EDA(Exploratory data analysis)
+
+데이터의 구조를 파악한 뒤 처리하기 좋은 형태로 데이터 형을 바꿔주었다. 
+
+```{r message=FALSE}
+summary(ab_test_goal)
+str(ab_test_goal)
+
+# log_date -> 날짜형으로
+# user_id -> 문자형으로
+# transaction_id -> 문자형으로
+# test_case -> 팩터형
+# app_name -> 팩터형
+ 
+ab_test_goal$log_date <- ab_test_goal$log_date %>% 
+  ymd()
+
+ab_test_goal$user_id <- ab_test_goal$user_id %>% 
+  as.character()
+
+ab_test_goal$transaction_id <- ab_test_goal$transaction_id %>% 
+  as.character()
+
+ab_test_goal$test_case <- ab_test_goal$test_case %>% 
+  as.factor()
+
+ab_test_goal$app_name <- ab_test_goal$app_name %>% 
+  as_factor()
+
+summary(ab_test_imp)
+str(ab_test_imp)
+dim(ab_test_imp)
+# log_date -> 날짜형으로
+# test_case -> 팩터형으로
+# user_id -> 문자형으로
+# transaction_id -> 문자형으로
+# app_name -> 팩터형으로
+
+
+# log_date             app_name      test_name         test_case   user_id          transaction_id 
+# log_date             app_name      test_name         test_case   user_id          transaction_id  
+
+ab_test_imp$log_date <- ab_test_imp$log_date %>% 
+  ymd()
+
+ab_test_imp$test_case <- ab_test_imp$test_case %>% 
+  as.factor()
+
+ab_test_imp$user_id <- ab_test_imp$user_id %>% 
+  as.character()
+
+ab_test_imp$transaction_id <- ab_test_imp$transaction_id %>% 
+  as.character()
+
+ab_test_imp$app_name <- ab_test_imp$app_name %>% 
+  as.factor()
+```
+
+# Data Cleaning
+
+데이터 전처리 과정으로 목적에 맞게 데이터를 결합하거나 추출하는 등의 작업이 포함되어 있다. 
+
+#### 데이터 결합
+
+앞서 불러온 두 데이터를 결합하여 분석을 시작할 것이다. merge() 함수를 사용하여 'ab_test_goal' 과 'ab_test_imp'를 'transaction_id'를 기준으로 묶고 join 방식은 'all.x=T(Left Outer Join)'을 사용할 것이다. 위에서 보면 중복되는 컬럼이 있는데 여기서 변수 이름이 중복되므로 suffixes = 옵션을 사용하여 중복되는 변수의 뒷 부분에 .g를 추가하였다. (참고 : suffixes = ('string', 'string'))
+
+```{r message=FALSE}
+# 데이터 결합
+ab_test_goal_imp <- merge(ab_test_imp, ab_test_goal,  by ="transaction_id", all.x=T, suffixes =c("", ".g"))
+head(ab_test_goal_imp)
+```
+
+
+#### 플래그 작성
+
+ab_test_goal_imp에 is.goal 이라는 항목이 추가되었다. 항목 user_id.g의 값이 'NA'일 경우에는 '0'을, 그 이외의 경우에는 '1'을 기입하여 이것을 클릭했는지 하지 않았는지 판정하는 플래그로 삼는다. 
+
+```{r message=FALSE}
+# 클릭했는지 하지 않았는지 나타내는 플레그 작성
+ab_test_goal_imp$is.goal <- ifelse(is.na(ab_test_goal_imp$user_id.g),0,1)
+head(ab_test_goal_imp)
+
+```
+
+#### 클릭율 집계
+
+클릭율을 집계하기 위해 plyr 패키지의 ddply 함수를 사용했다. ab_test_goal_imp 데이터의 test_case 항목별로 집계를 실시하고, 집계내용은 cvr 항목에 표시되며 '클릭한 사람의 집계 / 배너광고가 표시된 유저수'로 클릭율을 산출한다. 
+```{r message=FALSE}
+# 클릭률 집계
+library(plyr)
+
+ddply(ab_test_goal_imp, .(test_case), summarize, 
+      cvr = sum(is.goal)/length(user_id))
+```
+
+
+#### 카이 제곱 검정
+
+카이제곱 검정에서는 chisq.test()함수를 사용하는데 여기서는 p-value < 2.2e-16 으로 매우 작게 나왔다. 
+```{r message=FALSE}
+chisq.test(ab_test_goal_imp$test_case, ab_test_goal_imp$is.goal)
+```
+
+# 테스트 케이스별로 클릭율 산출하기
+
+ab_test_goal_imp 데이터의 log_date 와 test_case 단위로 세 번의 집계를 실시하였고, 첫 번째는 imp 항목에 user_id 수를 카운트해서 넣었다. 두 번째는 cv라는 항목에 is.goal 수의 합계를, 마지막으로 cvr 항목에는 이 두 수치를 나눈 비율을 넣었다. 즉, 그날 배너광고가 얼마나 표시되었고, 몇 명이 클릭했으며, 클릭율은 어떠한지 집계한 것이다. 그리고 summarize 대신에 transform을 사용했는데, 이것으로 집계한 결과를 원래 데이터에 추가할 수 있다. 여기서는 test_case별 클릭율을 원래 데이터에 추가하고 있다. 
+```{r message=FALSE}
+# 날짜별, 테스트 케이스별로 클릭율 산출
+
+ab_test_goal_imp_summary <- ddply(ab_test_goal_imp, .(log_date, test_case), summarize,
+                                  imp = length(user_id),
+                                  cv = sum(is.goal),
+                                  cvr = sum(is.goal) / length(user_id))
+
+# 테스트 케이스별로 클릭율 산출하기
+
+ab_test_goal_imp_summary <- ddply(ab_test_goal_imp_summary, .(test_case), transform,
+                                  cvr.avg = sum(cv) / sum(imp))
+
+head(ab_test_goal_imp_summary)
+```
+
+# Visualization
+
+정제한 데이터를 가지고 시각화를 하는 단계이다. 
+```{r message=FALSE, fig.align="center", fig.height=7, fig.width = 10}
+library(scales)
+
+ab_test_goal_imp_summary$log_date <- as.Date(ab_test_goal_imp_summary$log_date)
+
+limits <- c( 0, max(ab_test_goal_imp_summary$cvr))
+
+a <- ggplot(ab_test_goal_imp_summary, aes( x = log_date, y = cvr,
+                                      col = test_case, lty = test_case, shape = test_case)) +
+  geom_line(lwd =1) +
+  geom_point(size = 4) +
+  geom_line(aes( y = cvr.avg, col = test_case)) +
+  scale_y_continuous(label = percent, limits = limits)
+
+ggplotly(a)
+
+
+```
+
+# Result 
+
+
