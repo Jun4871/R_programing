@@ -1,0 +1,10 @@
+name: Publish Document
+title:
+username:
+account: rpubs
+server: rpubs.com
+hostUrl: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/597254/ffde0f2699cc4cabaa59f67365f5264f
+bundleId: https://api.rpubs.com/api/v1/document/597254/ffde0f2699cc4cabaa59f67365f5264f
+url: http://rpubs.com/Ryukyungjun/597254
+when: 1586532584.33266

@@ -1,5 +1,5 @@
 ---
-title: "finding root cause of sales decreasing"
+title: "매출하락의 근본적인 원인은 무엇인가?"
 author: "Ryu"
 date: "`r Sys.Date()`"
 output: 
