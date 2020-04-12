@@ -1,0 +1,67 @@
+---
+title: "집객효과가 가장 큰 광고의 조합은 무엇인가?"
+author: "Ryu"
+date: '2020 4 11 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Overview 
+
+저번 분석에 이어서 이번에는 TV, 잡지 등과 같은 매체를 이용하여 광고했을 때 어떤 조합이 신규유저의 수를 늘리는 데 가장 효과적인가에 대해 분석을 해보고자 한다. 현재 문제점은 '매스미디어 매체는 광고효과 CPI(Cost per Install)가 일정치 않다' 라는 데 있다. 3개월에 한 번은 광고를 발주해야하는데 여기서 'TV광고와 잡지 광고의 비율을 적절히 배분하여 최대한의 광고효과를 내는 것이 이상적인 모습' 이라고 할 수 있다. 과제는 다음과 같다.
+
+1. 과거의 데이터를 가지고 TV와 잡지 각각의 광고비와 획득 유저수 관계 파악하기
+2. 그 관계성을 이용해서 TV와 잡지에 투입할 광고 배분 결정하기 
+
+# Dataloading 
+
+```{r}
+ad_result <- read.csv("ad_result.csv", header = T, stringsAsFactors = FALSE)
+
+
+```
+
+# EDA(Exploratory data analysis)
+
+- month : chr -> 날짜형으로 변경
+
+```{r}
+library(lubridate)
+library(tidyverse)
+str(ad_result)
+
+summary(ad_result)
+ad_result$month <- ad_result$month %>% 
+  as_factor()
+levels(ad_result$month) <- levels()
+nlevels(ad_result$month)
+
+ad_result[,1]
+str(ad_result[,1])
+head(ad_result, 20)
+
+ad_result[,1:4]
+```
+
+```{r}
+library(ggplot2)
+library(corrplot)
+ggplot(ad_result, aes( x = install, y = magazine)) +
+  geom_point() +
+  geom_line()
+
+
+ggplot(ad_result, aes( x = install, y = tvcm)) +
+  geom_point() +
+  geom_line()
+
+ggplot(ad_result, aes( x= install, y = month)) +
+  geom_col()
+
+ggplot(ad_result, aes( x= tvcm, y = month)) +
+  geom_col()
+```
+
