@@ -1,0 +1,23 @@
+---
+title: "game_sale_5"
+author: "Ryu"
+date: '2020 4 17 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Overview
+
+게임 '낚시랜드'에서는 유저가 피처폰에서 스마트폰으로 전환할 때 유저 ID 정보를 제대로 이전하지 못한 경우가 많지 않은가?' 하는 의혹이 발생했다는 가정하에 과거 데이터를 이용해 분석해보고자 한다. 
+
+# Dataloading
+
+```{r}
+dau <- read.csv("section7-dau.csv", header = T, stringsAsFactors = FALSE)
+head(dau)
+dau <- as_tibble(dau)
+```
+
