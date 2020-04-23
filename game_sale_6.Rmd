@@ -1,0 +1,29 @@
+---
+title: "game_sale_6"
+author: "Ryu"
+date: '2020 4 23 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(plyr)
+
+library(foreach)
+
+readTsvDates <- function(base.dir, app.name, date.from, date.to) {
+  date.from <- as.Date(date.from)
+  date.to <- as.Date(date.to)
+  dates <- seq.Date(date.from, date.to, by = "day")
+  x <- ldply(foreach(day = dates, combine = rbind) %do% {
+    read.csv(sprintf("%s/%s/%sdata.tsv", base.dir, app.name, day),
+             header = T,
+             sep = "\t", stringsAsFactors = F)
+  })
+  x
+}
+```
