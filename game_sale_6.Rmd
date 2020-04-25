@@ -27,3 +27,24 @@ readTsvDates <- function(base.dir, app.name, date.from, date.to) {
   x
 }
 ```
+
+```{r}
+readDAU <- function(app.name, date.from, date.to = date.from) {
+  data <- readTsvDates("sample-data/section8/daily/dau", app.name,
+                       date.from, date.to)
+}
+
+readDpu <- function(app.name, date.from, date.to = date.from) {
+  data <- readTsvDates("sample-data/section8/daily/dpu", app.name,
+                       date.from, date.to)
+  data
+}
+
+readActionDaily <- function(app.name, date.from, date.to = date.from) {
+  data <- readTsvDates("sample-data/section8/daily/action", app.name,
+                       date.from, date.to)
+  data
+}
+```
+
+
